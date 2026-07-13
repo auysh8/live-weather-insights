@@ -3,31 +3,31 @@
 A modern weather forecasting web app built with **React + TypeScript**, providing real-time weather data, hourly forecasts, and multi-day forecasts with a clean UI.
 
 🔗 **Live Demo:**
-👉 [https://auysh8.github.io/weather-app/](https://auysh8.github.io/weather-app/)
+👉 [https://auysh8.github.io/live-weather-insights/](https://auysh8.github.io/live-weather-insights/)
 
 ---
 
 ## ✨ Features
 
-* 🌍 Search weather by city
-* 📍 Automatic location detection (via browser geolocation)
-* 🕒 Hourly forecast
-* 📆 Multi-day forecast
-* ⭐ Bookmark cities (saved in localStorage)
-* 🎞️ Smooth animations using Framer Motion
-* ⚡ Fast builds with Vite
-* 🧭 GitHub Pages deployment
+- 🌍 Search weather by city
+- 📍 Automatic location detection (via browser geolocation)
+- 🕒 Hourly forecast
+- 📆 Multi-day forecast
+- ⭐ Bookmark cities (saved in localStorage)
+- 🎞️ Smooth animations using Framer Motion
+- ⚡ Fast builds with Vite
+- 🧭 GitHub Pages deployment
 
 ---
 
 ## 🛠️ Tech Stack
 
-* **Frontend:** React, TypeScript
-* **Build Tool:** Vite
-* **Routing:** React Router (HashRouter for GitHub Pages)
-* **Animations:** Framer Motion
-* **API:** OpenWeatherMap API
-* **Hosting:** GitHub Pages
+- **Frontend:** React, TypeScript
+- **Build Tool:** Vite
+- **Routing:** React Router (HashRouter for GitHub Pages)
+- **Animations:** Framer Motion
+- **API:** OpenWeatherMap API
+- **Hosting:** GitHub Pages
 
 ---
 
@@ -36,8 +36,8 @@ A modern weather forecasting web app built with **React + TypeScript**, providin
 ### 1️⃣ Clone the repository
 
 ```bash
-git clone https://github.com/auysh8/weather-app.git
-cd weather-app
+git clone https://github.com/auysh8/live-weather-insights.git
+cd live-weather-insights
 ```
 
 ### 2️⃣ Install dependencies
@@ -83,20 +83,19 @@ npm run deploy
 
 Make sure:
 
-* `vite.config.ts` contains:
+- `vite.config.ts` contains:
 
   ```ts
-  base: "/weather-app/"
+  base: "/live-weather-insights/";
   ```
-* GitHub Pages settings are:
 
-  * **Branch:** `gh-pages`
-  * **Folder:** `/ (root)`
+- GitHub Pages settings are:
+  - **Branch:** `gh-pages`
+  - **Folder:** `/ (root)`
 
 ---
 
 ## 📸 Screenshots
-
 
 <div align="center">
   <table>
@@ -119,11 +118,11 @@ Make sure:
 
 ## 📚 What I Learned
 
-* Proper TypeScript typing for API responses
-* Handling `never` and `unknown` safely
-* Client-side routing on static hosting
-* GitHub Pages deployment workflow
-* Structuring a real-world React project
+- Proper TypeScript typing for API responses
+- Handling `never` and `unknown` safely
+- Client-side routing on static hosting
+- GitHub Pages deployment workflow
+- Structuring a real-world React project
 
 ---
 

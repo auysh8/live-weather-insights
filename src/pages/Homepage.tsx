@@ -23,7 +23,11 @@ type WeatherData = {
   aqi: number;
 };
 
-const Homepage = ({ onClick }) => {
+interface HomepageProps {
+  onClick : () => void;
+}
+
+const Homepage = ({ onClick }:HomepageProps) => {
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
   const [bookmarks, setBookmarks] = useState<string[]>([]);
   const [bookmarkDataList, setBookmarkDataList] = useState<WeatherData[]>([]);
@@ -69,10 +73,8 @@ const Homepage = ({ onClick }) => {
         const data = await response.json();
         const cityNames = data.map((item: any) => item.city);
         setBookmarks(cityNames);
-        setIsBookmarkLanded(true);
       } catch (error) {
         console.error(error);
-        setIsBookmarkLanded(true);
       } finally {
         setAppIsLoading(false);
       }

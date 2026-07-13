@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
 import { FaHistory } from "react-icons/fa";
-import { toast } from "react-toastify";
 
 type SearchBarProps = {
   onSearch: (city: string) => void;
@@ -15,7 +14,7 @@ const Search_bar = ({ onSearch }: SearchBarProps) => {
   const [isDropdown, setIsDropdown] = useState(false);
   const [history, setHistory] = useState<HistroyItems[]>([]);
   const [query, setQuery] = useState("");
-  const searchRef = useRef(null);
+  const searchRef = useRef<HTMLDivElement>(null);
   const API_BASE_URL = "https://weather-app-za51.onrender.com";
 
   const fetchHistory = async (cityName = "") => {
@@ -43,8 +42,11 @@ const Search_bar = ({ onSearch }: SearchBarProps) => {
   };
 
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (searchRef.current && !searchRef.current.contains(event.target)) {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        searchRef.current &&
+        !searchRef.current.contains(event.target as Node)
+      ) {
         setIsDropdown(false);
       }
     };

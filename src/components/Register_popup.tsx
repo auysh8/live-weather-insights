@@ -1,10 +1,15 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import styles from "./Register_popup.module.css";
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import { toast } from "react-toastify";
 import { motion } from "framer-motion";
+import type { ErrorResponse } from "react-router-dom";
 
-const Register_popup = ({ isLogin }) => {
+interface RegisterPopupProps {
+  isLogin: () => void;
+}
+
+const Register_popup = ({ isLogin }: RegisterPopupProps) => {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -26,12 +31,13 @@ const Register_popup = ({ isLogin }) => {
       }
       isLogin();
     } catch (error) {
-      if (error.response && error.response.status === 400) {
+      const err = error as AxiosError<ErrorResponse>
+      if (err.response && err.response.status === 400) {
         console.log("User already registered");
       } else {
-        console.error("Server error", error.message);
+        console.error("Server error", err.message);
       }
-      toast.error("Invalid credentials")
+      toast.error("Invalid credentials");
     }
   };
   return (

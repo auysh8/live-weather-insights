@@ -1,10 +1,16 @@
 import { useState } from "react";
 import styles from "./Login_popup.module.css";
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import { toast } from "react-toastify";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
+import type { ErrorResponse } from "react-router-dom";
 
-const Login_popup = ({ isRegister, onSuccess }) => {
+interface LoginPopupProps {
+  isRegister: () => void;
+  onSuccess: () => void;
+}
+
+const Login_popup = ({ isRegister, onSuccess }: LoginPopupProps) => {
   const API_BASE_URL = "https://weather-app-za51.onrender.com";
 
   const [email, setEmail] = useState("");
@@ -22,7 +28,8 @@ const Login_popup = ({ isRegister, onSuccess }) => {
       window.dispatchEvent(new Event("storage-update"));
       if (token) onSuccess();
     } catch (error) {
-      if (error.response || error.response?.status === 400) {
+      const err = error as AxiosError<ErrorResponse>;
+      if (err.response && err.response?.status === 400) {
         toast.error("Invalid credentials");
       }
       setPassword("");

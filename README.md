@@ -1,131 +1,182 @@
-# 🌦️ Weather App
+# Live Weather Insights 🌤️
 
-A modern weather forecasting web app built with **React + TypeScript**, providing real-time weather data, hourly forecasts, and multi-day forecasts with a clean UI.
+A full-stack, real-time weather analytics and forecast application that delivers detailed meteorological data, interactive search, location bookmarking, and search history tracking for personalized user insights.
 
-🔗 **Live Demo:**
-👉 [https://auysh8.github.io/live-weather-insights/](https://auysh8.github.io/live-weather-insights/)
+![React](https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=black)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)
+![Express](https://img.shields.io/badge/Express-000000?style=for-the-badge&logo=express&logoColor=white)
+![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=for-the-badge&logo=mongodb&logoColor=white)
+
+---
+
+## 📸 Visual Preview
+
+| Homepage Overview | Detailed Forecast |
+| :---: | :---: |
+| ![Homepage Overview](https://raw.githubusercontent.com/auysh8/live-weather-insights/main/screenshots/home.png) | ![Detailed Forecast](https://raw.githubusercontent.com/auysh8/live-weather-insights/main/screenshots/forecast.png) |
 
 ---
 
 ## ✨ Features
 
-- 🌍 Search weather by city
-- 📍 Automatic location detection (via browser geolocation)
-- 🕒 Hourly forecast
-- 📆 Multi-day forecast
-- ⭐ Bookmark cities (saved in localStorage)
-- 🎞️ Smooth animations using Framer Motion
-- ⚡ Fast builds with Vite
-- 🧭 GitHub Pages deployment
+- 🌡️ **Real-Time Weather Metrics**: Instantly fetch live temperature, atmospheric conditions, wind speed, humidity, and UV levels.
+- 📅 **Detailed Multi-Day Forecast**: View comprehensive extended forecasts with daily highs, lows, and hourly trends.
+- 🔍 **Interactive Location Search**: Search for cities worldwide with quick dynamic autocompletion and location history.
+- 📌 **Personalized Bookmarks**: Save favorite cities and regions to quickly access updated forecasts on login.
+- 📜 **Search History Tracking**: Automatically track recent searches tied to user accounts for quick reference.
+- 🔐 **User Authentication**: Secure user registration and login functionality backed by JWT middleware.
+
+---
+
+## 📂 Repository Structure
+
+```
+live-weather-insights/
+├── screenshots/
+│   ├── forecast.png
+│   └── home.png
+├── server/
+│   ├── middleware/
+│   │   └── auth.js
+│   ├── models/
+│   │   ├── Bookmarks.js
+│   │   ├── History.js
+│   │   └── User.js
+│   ├── routes/
+│   │   ├── auth.js
+│   │   ├── bookmarks.js
+│   │   ├── history.js
+│   │   └── weather.js
+│   ├── index.js
+│   └── package.json
+├── src/
+│   ├── components/
+│   │   ├── Login_popup.module.css
+│   │   ├── Login_popup.tsx
+│   │   ├── Register_popup.module.css
+│   │   ├── Register_popup.tsx
+│   │   ├── Search_bar.tsx
+│   │   └── Weather_card.tsx
+│   ├── pages/
+│   │   ├── Detailed_forecast.tsx
+│   │   └── Homepage.tsx
+│   ├── App.css
+│   ├── App.tsx
+│   ├── main.tsx
+│   └── types.ts
+├── index.html
+├── package.json
+├── tsconfig.json
+└── vite.config.ts
+```
+
+---
+
+## 🏗️ Architecture & Data Flow
+
+```mermaid
+graph TD
+    User([User / Browser]) -->|Interacts with UI| ReactApp[React Frontend / Vite]
+    ReactApp -->|HTTP Requests / Auth JWT| ExpressServer[Express API Server]
+    ExpressServer -->|Auth Middleware| AuthMW[JWT Authentication]
+    ExpressServer -->|Queries & Mutations| MongoDB[(MongoDB Database)]
+    ExpressServer -->|Fetches Live Weather Data| WeatherAPI[External Weather API]
+    MongoDB -->|Users, History, Bookmarks| ExpressServer
+    WeatherAPI -->|Weather & Forecast Payload| ExpressServer
+    ExpressServer -->|JSON Response| ReactApp
+```
 
 ---
 
 ## 🛠️ Tech Stack
 
-- **Frontend:** React, TypeScript
-- **Build Tool:** Vite
-- **Routing:** React Router (HashRouter for GitHub Pages)
-- **Animations:** Framer Motion
-- **API:** OpenWeatherMap API
-- **Hosting:** GitHub Pages
+| Category | Technologies |
+| :--- | :--- |
+| **Frontend** | React, TypeScript, Vite, CSS Modules |
+| **Backend** | Node.js, Express.js |
+| **Database** | MongoDB (Mongoose models for Users, Bookmarks, History) |
+| **Authentication** | JSON Web Tokens (JWT) & Custom Middleware |
+| **Tooling & Linting** | ESLint, TypeScript Compiler (tsc) |
 
 ---
 
-## 🚀 Getting Started (Local Setup)
+## 🚀 Quick Start
 
-### 1️⃣ Clone the repository
+### Prerequisites
+- [Node.js](https://nodejs.org/) (v18 or higher recommended)
+- [npm](https://www.npmjs.com/) or [yarn](https://yarnpkg.com/)
+- Running [MongoDB](https://www.mongodb.com/) instance or URI string
 
+### 1. Clone the Repository
 ```bash
 git clone https://github.com/auysh8/live-weather-insights.git
 cd live-weather-insights
 ```
 
-### 2️⃣ Install dependencies
+### 2. Install Dependencies
+Install client and server dependencies:
 
 ```bash
+# Install frontend dependencies
 npm install
+
+# Install backend dependencies
+cd server
+npm install
+cd ..
 ```
 
-### 3️⃣ Add environment variables
+### 3. Start Development Servers
 
-Create a `.env` file in the root directory:
-
-```env
-VITE_OPENWEATHER_API_KEY=your_api_key_here
-```
-
-You can get a free API key from:
-[https://openweathermap.org/api](https://openweathermap.org/api)
-
-### 4️⃣ Run the development server
-
+**Backend Express Server:**
 ```bash
+cd server
+npm start
+```
+
+**Frontend Client:**
+```bash
+# From the root directory
 npm run dev
 ```
 
-The app will be available at:
-
-```
-http://localhost:5173
-```
+Open your browser and navigate to `http://localhost:5173`.
 
 ---
 
-## 🌐 Deployment (GitHub Pages)
+## 📖 Available Scripts
 
-This project is deployed using the **gh-pages** branch.
+### Client Scripts (Root Directory)
 
-### Build & Deploy
+| Command | Description |
+| :--- | :--- |
+| `npm run dev` | Launches Vite local development server |
+| `npm run build` | Compiles TypeScript and builds production bundles |
+| `npm run preview` | Previews the production build locally |
+| `npm run lint` | Runs ESLint analysis across codebase |
 
-```bash
-npm run deploy
-```
+### Backend Scripts (`/server` Directory)
 
-Make sure:
-
-- `vite.config.ts` contains:
-
-  ```ts
-  base: "/live-weather-insights/";
-  ```
-
-- GitHub Pages settings are:
-  - **Branch:** `gh-pages`
-  - **Folder:** `/ (root)`
+| Command | Description |
+| :--- | :--- |
+| `npm start` | Starts the Express REST API backend server |
 
 ---
 
-## 📸 Screenshots
+## 🤝 Contributing
 
-<div align="center">
-  <table>
-    <tr>
-      <td align="center">
-        <img src="./screenshots/home.png" alt="Homepage" width="400px" />
-        <br />
-        <b>📍 Homepage</b>
-      </td>
-      <td align="center">
-        <img src="./screenshots/forecast.png" alt="Forecast" width="400px" />
-        <br />
-        <b>🌦️ Forecast Page</b>
-      </td>
-    </tr>
-  </table>
-</div>
+Contributions are always welcome! Follow these steps to submit your work:
 
----
-
-## 📚 What I Learned
-
-- Proper TypeScript typing for API responses
-- Handling `never` and `unknown` safely
-- Client-side routing on static hosting
-- GitHub Pages deployment workflow
-- Structuring a real-world React project
+1. Fork the Repository.
+2. Create a Feature Branch (`git checkout -b feature/AmazingFeature`).
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`).
+4. Push to the Branch (`git push origin feature/AmazingFeature`).
+5. Open a Pull Request.
 
 ---
 
 ## 📄 License
 
-This project is open source and available under the **MIT License**.
+This project is licensed under the MIT License. See the `LICENSE` file for details.

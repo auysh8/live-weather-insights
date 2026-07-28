@@ -74,22 +74,6 @@ live-weather-insights/
 
 ---
 
-## 🏗️ Architecture & Data Flow
-
-```mermaid
-graph TD
-    User([User / Browser]) -->|Interacts with UI| ReactApp[React Frontend / Vite]
-    ReactApp -->|HTTP Requests / Auth JWT| ExpressServer[Express API Server]
-    ExpressServer -->|Auth Middleware| AuthMW[JWT Authentication]
-    ExpressServer -->|Queries & Mutations| MongoDB[(MongoDB Database)]
-    ExpressServer -->|Fetches Live Weather Data| WeatherAPI[External Weather API]
-    MongoDB -->|Users, History, Bookmarks| ExpressServer
-    WeatherAPI -->|Weather & Forecast Payload| ExpressServer
-    ExpressServer -->|JSON Response| ReactApp
-```
-
----
-
 ## 🛠️ Tech Stack
 
 | Category | Technologies |

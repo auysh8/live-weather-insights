@@ -1,38 +1,48 @@
-# Live Weather Insights 🌤️
+# Live Weather Insights
 
-A full-stack, real-time weather analytics and forecast application that delivers detailed meteorological data, interactive search, location bookmarking, and search history tracking for personalized user insights.
+A modern full-stack weather forecasting and analytics web application built with React, TypeScript, Node.js, Express, and MongoDB. Powered by the OpenWeatherMap API, providing real-time conditions, dynamic hourly trends, 5-day forecasts, geolocation lookup, user authentication, search history, and persistent bookmarks.
 
-![React](https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=black)
-![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
-![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)
-![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)
-![Express](https://img.shields.io/badge/Express-000000?style=for-the-badge&logo=express&logoColor=white)
-![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=for-the-badge&logo=mongodb&logoColor=white)
+[![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)
+[![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)
+[![Express.js](https://img.shields.io/badge/Express-000000?style=for-the-badge&logo=express&logoColor=white)](https://expressjs.com/)
+[![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=for-the-badge&logo=mongodb&logoColor=white)](https://www.mongodb.com/)
 
 ---
 
-## 📸 Visual Preview
+## Deployments & Live Demo
 
-| Homepage Overview | Detailed Forecast |
+- **Live Application (GitHub Pages):** [https://auysh8.github.io/live-weather-insights/](https://auysh8.github.io/live-weather-insights/)
+- **Live Application (Vercel):** [https://live-weather-insights.vercel.app](https://live-weather-insights.vercel.app)
+- **GitHub Repository:** [https://github.com/auysh8/weather-app](https://github.com/auysh8/weather-app)
+
+---
+
+## Visual Preview
+
+| Homepage & Search | Detailed Forecast & Trends |
 | :---: | :---: |
-| ![Homepage Overview](https://raw.githubusercontent.com/auysh8/live-weather-insights/main/screenshots/home.png) | ![Detailed Forecast](https://raw.githubusercontent.com/auysh8/live-weather-insights/main/screenshots/forecast.png) |
+| ![Homepage](./screenshots/home.png) | ![Forecast Page](./screenshots/forecast.png) |
 
 ---
 
-## ✨ Features
+## Key Features
 
-- 🌡️ **Real-Time Weather Metrics**: Instantly fetch live temperature, atmospheric conditions, wind speed, humidity, and UV levels.
-- 📅 **Detailed Multi-Day Forecast**: View comprehensive extended forecasts with daily highs, lows, and hourly trends.
-- 🔍 **Interactive Location Search**: Search for cities worldwide with quick dynamic autocompletion and location history.
-- 📌 **Personalized Bookmarks**: Save favorite cities and regions to quickly access updated forecasts on login.
-- 📜 **Search History Tracking**: Automatically track recent searches tied to user accounts for quick reference.
-- 🔐 **User Authentication**: Secure user registration and login functionality backed by JWT middleware.
+- **Real-Time Weather Metrics:** Instantly fetch temperature, wind speed, humidity, UV index, and weather conditions.
+- **Hourly & 5-Day Forecasts:** In-depth breakdown with daily highs, lows, and visual weather trends.
+- **City Search & Autocomplete:** Search for cities worldwide with fast autocomplete and dynamic lookup.
+- **Browser Geolocation:** Automatically retrieve local weather based on device coordinates.
+- **Personalized Bookmarks:** Save favorite cities to easily monitor conditions upon login.
+- **Search History Tracking:** Securely stores recent user search queries for quick re-navigation.
+- **User Authentication:** Registration and login workflows secured with JWT middleware.
+- **Smooth Micro-Interactions:** Fluid modal animations and UI transitions using Framer Motion.
 
 ---
 
-## 📂 Repository Structure
+## Repository Structure
 
-```
+```text
 live-weather-insights/
 ├── screenshots/
 │   ├── forecast.png
@@ -74,93 +84,106 @@ live-weather-insights/
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 | Category | Technologies |
 | :--- | :--- |
-| **Frontend** | React, TypeScript, Vite, CSS Modules |
-| **Backend** | Node.js, Express.js |
-| **Database** | MongoDB (Mongoose models for Users, Bookmarks, History) |
-| **Authentication** | JSON Web Tokens (JWT) & Custom Middleware |
-| **Tooling & Linting** | ESLint, TypeScript Compiler (tsc) |
+| **Frontend** | React 18/19, TypeScript, CSS Modules, Framer Motion |
+| **Routing** | React Router DOM (HashRouter) |
+| **Backend** | Node.js, Express.js, REST API |
+| **Database** | MongoDB (Mongoose schemas for Users, Bookmarks, History) |
+| **Authentication** | JSON Web Tokens (JWT), custom auth middleware |
+| **External API** | OpenWeatherMap API |
+| **Deployment** | Vercel, GitHub Pages |
 
 ---
 
-## 🚀 Quick Start
+## Getting Started
 
 ### Prerequisites
-- [Node.js](https://nodejs.org/) (v18 or higher recommended)
-- [npm](https://www.npmjs.com/) or [yarn](https://yarnpkg.com/)
-- Running [MongoDB](https://www.mongodb.com/) instance or URI string
 
-### 1. Clone the Repository
-```bash
-git clone https://github.com/auysh8/live-weather-insights.git
-cd live-weather-insights
-```
+- Node.js (v18 or higher recommended)
+- OpenWeatherMap API Key ([Get a free key](https://openweathermap.org/api))
+- MongoDB connection string / MongoDB Atlas URI
 
-### 2. Install Dependencies
-Install client and server dependencies:
+### Setup & Installation
 
-```bash
-# Install frontend dependencies
-npm install
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/auysh8/weather-app.git
+   cd weather-app
+   ```
 
-# Install backend dependencies
-cd server
-npm install
-cd ..
-```
+2. **Install dependencies:**
+   ```bash
+   # Install frontend dependencies
+   npm install
 
-### 3. Start Development Servers
+   # Install backend dependencies
+   cd server
+   npm install
+   cd ..
+   ```
 
-**Backend Express Server:**
-```bash
-cd server
-npm start
-```
+3. **Configure environment variables:**
 
-**Frontend Client:**
-```bash
-# From the root directory
-npm run dev
-```
+   Create a `.env` file in the root directory:
+   ```env
+   VITE_OPENWEATHER_API_KEY=your_openweathermap_api_key
+   ```
 
-Open your browser and navigate to `http://localhost:5173`.
+   Create a `.env` file in `server/`:
+   ```env
+   PORT=5000
+   MONGO_URI=your_mongodb_connection_string
+   JWT_SECRET=your_jwt_secret_key
+   ```
+
+4. **Start development servers:**
+
+   - **Backend Server:**
+     ```bash
+     cd server
+     npm start
+     ```
+
+   - **Frontend Client (in a separate terminal):**
+     ```bash
+     npm run dev
+     ```
+
+5. Open your browser and navigate to `http://localhost:5173`.
 
 ---
 
-## 📖 Available Scripts
+## Available Scripts
 
-### Client Scripts (Root Directory)
+### Frontend Scripts (Root)
 
 | Command | Description |
 | :--- | :--- |
-| `npm run dev` | Launches Vite local development server |
-| `npm run build` | Compiles TypeScript and builds production bundles |
-| `npm run preview` | Previews the production build locally |
-| `npm run lint` | Runs ESLint analysis across codebase |
+| `npm run dev` | Starts Vite local development server |
+| `npm run build` | Builds frontend production bundle into `dist` |
+| `npm run preview` | Locally previews production build |
+| `npm run deploy` | Builds and deploys to `gh-pages` branch |
 
-### Backend Scripts (`/server` Directory)
+### Backend Scripts (`server/`)
 
 | Command | Description |
 | :--- | :--- |
-| `npm start` | Starts the Express REST API backend server |
+| `npm start` | Starts Express REST API server |
 
 ---
 
-## 🤝 Contributing
+## License
 
-Contributions are always welcome! Follow these steps to submit your work:
-
-1. Fork the Repository.
-2. Create a Feature Branch (`git checkout -b feature/AmazingFeature`).
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`).
-4. Push to the Branch (`git push origin feature/AmazingFeature`).
-5. Open a Pull Request.
+This project is open-source and licensed under the MIT License.
 
 ---
 
-## 📄 License
+## Author
 
-This project is licensed under the MIT License. See the `LICENSE` file for details.
+**Pankaj Bhandari**
+- GitHub: [https://github.com/auysh8](https://github.com/auysh8)
+- LinkedIn: [https://linkedin.com/in/pankajbhandari2004](https://linkedin.com/in/pankajbhandari2004)
+- Email: [pankajbhandari0714@gmail.com](mailto:pankajbhandari0714@gmail.com)

@@ -17,7 +17,10 @@ import {
   FaSnowflake,
   FaCloud,
   FaBolt,
-  FaSmog
+  FaSmog,
+  FaRightFromBracket,
+  FaXmark,
+  FaDroplet
 } from "react-icons/fa6";
 
 type WeatherData = {
@@ -66,6 +69,9 @@ type ForecastItem = {
     description: string;
     main: string;
   }[];
+  wind: {
+    speed: number;
+  };
 };
 
 interface HomepageProps {
@@ -79,7 +85,15 @@ const Homepage = ({ onClick }: HomepageProps) => {
   const [bookmarkDataList, setBookmarkDataList] = useState<WeatherData[]>([]);
   const [appIsLoading, setAppIsLoading] = useState(false);
   const [iconIndex, setIconIndex] = useState(0);
-  const [showBookmarksDrawer, setShowBookmarksDrawer] = useState(false);
+
+  // Active UI States
+  const [activeTab, setActiveTab] = useState<"dashboard" | "saved" | "settings">("dashboard");
+  const [unit, setUnit] = useState<"C" | "F">("C");
+  const [showNotificationModal, setShowNotificationModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showSavedLocationsModal, setShowSavedLocationsModal] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const [slotMetric, setSlotMetric] = useState<"temp" | "wind" | "humidity">("temp");
 
   const API_BASE_URL = "https://weather-app-za51.onrender.com";
   const token = localStorage.getItem("authToken");
@@ -158,22 +172,27 @@ const Homepage = ({ onClick }: HomepageProps) => {
   }, [bookmarks]);
 
   // Geolocation setup
-  useEffect(() => {
-    const onSuccess = (pos: GeolocationPosition) => {
-      const lat = pos.coords.latitude;
-      const long = pos.coords.longitude;
-      getCityName(lat, long);
-    };
-
-    const onFailure = () => {
-      getWeather("London");
-    };
-
+  const handleCurrentLocationSearch = () => {
     if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(onSuccess, onFailure);
+      setAppIsLoading(true);
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const lat = pos.coords.latitude;
+          const long = pos.coords.longitude;
+          getCityName(lat, long);
+        },
+        () => {
+          toast.info("Could not retrieve exact location. Falling back to default.");
+          getWeather("London");
+        }
+      );
     } else {
       getWeather("London");
     }
+  };
+
+  useEffect(() => {
+    handleCurrentLocationSearch();
   }, []);
 
   const getCityName = async (lat: number, long: number) => {
@@ -265,6 +284,22 @@ const Homepage = ({ onClick }: HomepageProps) => {
     }
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem("authToken");
+    setShowUserMenu(false);
+    setBookmarks([]);
+    setBookmarkDataList([]);
+    toast.info("Logged out successfully");
+  };
+
+  const formatTemp = (celsiusTemp: number) => {
+    if (unit === "F") {
+      const fahrenheit = Math.round((celsiusTemp * 9) / 5 + 32);
+      return `${fahrenheit}°F`;
+    }
+    return `${Math.round(celsiusTemp)}°C`;
+  };
+
   const getWeatherIcon = (conditionId: number) => {
     if (conditionId >= 200 && conditionId < 300) return <FaBolt className="text-amber-500" />;
     if (conditionId >= 300 && conditionId < 600) return <FaCloudRain className="text-blue-500" />;
@@ -315,15 +350,36 @@ const Homepage = ({ onClick }: HomepageProps) => {
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: true });
   };
 
-  // Extract temperature curve slots (Morning, Afternoon, Evening, Night)
+  // Extract temperature / metric curve slots (Morning, Afternoon, Evening, Night)
   const getDailyTimeSlots = () => {
     if (!forecastList || forecastList.length === 0) {
-      const baseTemp = weatherData ? Math.round(weatherData.main.temp) : 20;
+      const baseTemp = weatherData ? weatherData.main.temp : 20;
+      const baseWind = weatherData ? weatherData.wind.speed : 5;
+      const baseHum = weatherData ? weatherData.main.humidity : 60;
+
+      if (slotMetric === "wind") {
+        return [
+          { label: "Morning", val: `${Math.round(baseWind)} m/s`, icon: <FaWind /> },
+          { label: "Afternoon", val: `${Math.round(baseWind + 2)} m/s`, icon: <FaWind />, active: true },
+          { label: "Evening", val: `${Math.round(baseWind + 1)} m/s`, icon: <FaWind /> },
+          { label: "Night", val: `${Math.round(baseWind - 1)} m/s`, icon: <FaWind /> },
+        ];
+      }
+
+      if (slotMetric === "humidity") {
+        return [
+          { label: "Morning", val: `${baseHum}%`, icon: <FaDroplet /> },
+          { label: "Afternoon", val: `${Math.max(10, baseHum - 10)}%`, icon: <FaDroplet />, active: true },
+          { label: "Evening", val: `${baseHum + 5}%`, icon: <FaDroplet /> },
+          { label: "Night", val: `${baseHum + 10}%`, icon: <FaDroplet /> },
+        ];
+      }
+
       return [
-        { label: "Morning", temp: baseTemp - 2, icon: <FaCloudSun /> },
-        { label: "Afternoon", temp: baseTemp + 4, icon: <FaSun />, active: true },
-        { label: "Evening", temp: baseTemp + 1, icon: <FaCloudSun /> },
-        { label: "Night", temp: baseTemp - 4, icon: <FaCloud /> },
+        { label: "Morning", val: formatTemp(baseTemp - 2), icon: <FaCloudSun /> },
+        { label: "Afternoon", val: formatTemp(baseTemp + 4), icon: <FaSun />, active: true },
+        { label: "Evening", val: formatTemp(baseTemp + 1), icon: <FaCloudSun /> },
+        { label: "Night", val: formatTemp(baseTemp - 4), icon: <FaCloud /> },
       ];
     }
 
@@ -333,11 +389,29 @@ const Homepage = ({ onClick }: HomepageProps) => {
     const evening = forecastList[5] || forecastList[0];
     const night = forecastList[7] || forecastList[0];
 
+    if (slotMetric === "wind") {
+      return [
+        { label: "Morning", val: `${Math.round(morning.wind.speed)} m/s`, icon: <FaWind /> },
+        { label: "Afternoon", val: `${Math.round(afternoon.wind.speed)} m/s`, icon: <FaWind />, active: true },
+        { label: "Evening", val: `${Math.round(evening.wind.speed)} m/s`, icon: <FaWind /> },
+        { label: "Night", val: `${Math.round(night.wind.speed)} m/s`, icon: <FaWind /> },
+      ];
+    }
+
+    if (slotMetric === "humidity") {
+      return [
+        { label: "Morning", val: `${morning.main.humidity}%`, icon: <FaDroplet /> },
+        { label: "Afternoon", val: `${afternoon.main.humidity}%`, icon: <FaDroplet />, active: true },
+        { label: "Evening", val: `${evening.main.humidity}%`, icon: <FaDroplet /> },
+        { label: "Night", val: `${night.main.humidity}%`, icon: <FaDroplet /> },
+      ];
+    }
+
     return [
-      { label: "Morning", temp: Math.round(morning.main.temp), icon: getWeatherIcon(morning.weather[0].id) },
-      { label: "Afternoon", temp: Math.round(afternoon.main.temp), icon: getWeatherIcon(afternoon.weather[0].id), active: true },
-      { label: "Evening", temp: Math.round(evening.main.temp), icon: getWeatherIcon(evening.weather[0].id) },
-      { label: "Night", temp: Math.round(night.main.temp), icon: getWeatherIcon(night.weather[0].id) },
+      { label: "Morning", val: formatTemp(morning.main.temp), icon: getWeatherIcon(morning.weather[0].id) },
+      { label: "Afternoon", val: formatTemp(afternoon.main.temp), icon: getWeatherIcon(afternoon.weather[0].id), active: true },
+      { label: "Evening", val: formatTemp(evening.main.temp), icon: getWeatherIcon(evening.weather[0].id) },
+      { label: "Night", val: formatTemp(night.main.temp), icon: getWeatherIcon(night.weather[0].id) },
     ];
   };
 
@@ -363,8 +437,8 @@ const Homepage = ({ onClick }: HomepageProps) => {
       .slice(1, 6)
       .map((key) => {
         const dayObj = dailyMap[key];
-        const minTemp = Math.round(Math.min(...dayObj.temps));
-        const maxTemp = Math.round(Math.max(...dayObj.temps));
+        const minTemp = Math.min(...dayObj.temps);
+        const maxTemp = Math.max(...dayObj.temps);
         return {
           date: dayObj.date,
           condition: dayObj.weather.main,
@@ -391,7 +465,7 @@ const Homepage = ({ onClick }: HomepageProps) => {
     <div className="app-container">
       {/* Left Navigation Rail */}
       <aside className="sidebar-rail">
-        <div className="sidebar-logo">
+        <div className="sidebar-logo cursor-pointer" onClick={() => { setActiveTab("dashboard"); setShowSavedLocationsModal(false); setShowSettingsModal(false); }}>
           <div className="sidebar-logo-icon">
             <FaCloudSun />
           </div>
@@ -399,24 +473,81 @@ const Homepage = ({ onClick }: HomepageProps) => {
         </div>
 
         <nav className="sidebar-nav">
-          <button className="nav-item active" title="Dashboard">
+          <button
+            className={`nav-item ${activeTab === "dashboard" ? "active" : ""}`}
+            title="Dashboard"
+            onClick={() => {
+              setActiveTab("dashboard");
+              setShowSavedLocationsModal(false);
+              setShowSettingsModal(false);
+            }}
+          >
             <FaBookmark />
           </button>
-          <button className="nav-item" title="Compass / Discover" onClick={() => setShowBookmarksDrawer(!showBookmarksDrawer)}>
+          <button
+            className={`nav-item ${activeTab === "saved" ? "active" : ""}`}
+            title="Saved Locations"
+            onClick={() => {
+              setActiveTab("saved");
+              setShowSavedLocationsModal(true);
+            }}
+          >
             <FaCompass />
           </button>
-          <button className="nav-item" title="Locations">
+          <button
+            className="nav-item"
+            title="Locate Me"
+            onClick={handleCurrentLocationSearch}
+          >
             <FaLocationDot />
           </button>
-          <button className="nav-item" title="Settings">
+          <button
+            className={`nav-item ${activeTab === "settings" ? "active" : ""}`}
+            title="Settings"
+            onClick={() => {
+              setActiveTab("settings");
+              setShowSettingsModal(true);
+            }}
+          >
             <FaGear />
           </button>
         </nav>
 
-        <div className="sidebar-footer">
-          <button className="nav-item" onClick={onClick} title="Account">
+        <div className="sidebar-footer relative">
+          <button
+            className="nav-item"
+            onClick={() => {
+              if (token) {
+                setShowUserMenu(!showUserMenu);
+              } else {
+                onClick();
+              }
+            }}
+            title="Account"
+          >
             <i className="fa-solid fa-user"></i>
           </button>
+
+          {/* User Popover */}
+          <AnimatePresence>
+            {showUserMenu && token && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="absolute left-16 bottom-0 w-48 bg-white rounded-xl shadow-xl border border-slate-100 p-3 z-50"
+              >
+                <div className="text-sm font-bold text-slate-800 mb-1">Jack Grealish</div>
+                <div className="text-xs text-slate-400 mb-3">jack@example.com</div>
+                <button
+                  onClick={handleLogout}
+                  className="w-full text-left flex items-center gap-2 text-red-500 hover:bg-red-50 p-2 rounded-lg text-xs font-semibold"
+                >
+                  <FaRightFromBracket /> Log Out
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </aside>
 
@@ -425,7 +556,7 @@ const Homepage = ({ onClick }: HomepageProps) => {
         {/* Header Bar */}
         <header className="dashboard-header">
           <div className="user-greeting">
-            <div className="avatar-container">
+            <div className="avatar-container cursor-pointer" onClick={() => !token && onClick()}>
               <span>👤</span>
             </div>
             <div className="greeting-text">
@@ -448,7 +579,11 @@ const Homepage = ({ onClick }: HomepageProps) => {
                 <FaRegBookmark />
               )}
             </button>
-            <button className="header-icon-btn" title="Notifications">
+            <button
+              className="header-icon-btn"
+              onClick={() => setShowNotificationModal(true)}
+              title="Notifications"
+            >
               <FaBell />
             </button>
           </div>
@@ -468,7 +603,7 @@ const Homepage = ({ onClick }: HomepageProps) => {
                 </div>
 
                 <div className="weather-hero-temp">
-                  <div className="temp-val">{Math.round(weatherData.main.temp)}°C</div>
+                  <div className="temp-val">{formatTemp(weatherData.main.temp)}</div>
                   <div className="weather-desc">{weatherData.weather[0].description}</div>
                 </div>
 
@@ -520,14 +655,36 @@ const Homepage = ({ onClick }: HomepageProps) => {
 
             {/* Bottom Row Grid */}
             <div className="dashboard-bottom-grid">
-              {/* Daily Temperature Curve */}
+              {/* Daily Temperature / Metrics Curve */}
               <div className="temp-curve-card">
                 <div className="card-title-bar">
-                  <h3>How's the temperature today?</h3>
+                  <h3>
+                    {slotMetric === "temp" && "How's the temperature today?"}
+                    {slotMetric === "wind" && "How's the wind speed today?"}
+                    {slotMetric === "humidity" && "How's the humidity level today?"}
+                  </h3>
                   <div className="temp-dots-nav">
-                    <button className="temp-dot-btn active"><FaSun /></button>
-                    <button className="temp-dot-btn"><FaCloudSun /></button>
-                    <button className="temp-dot-btn"><FaWind /></button>
+                    <button
+                      className={`temp-dot-btn ${slotMetric === "temp" ? "active" : ""}`}
+                      onClick={() => setSlotMetric("temp")}
+                      title="Temperature"
+                    >
+                      <FaSun />
+                    </button>
+                    <button
+                      className={`temp-dot-btn ${slotMetric === "wind" ? "active" : ""}`}
+                      onClick={() => setSlotMetric("wind")}
+                      title="Wind Speed"
+                    >
+                      <FaWind />
+                    </button>
+                    <button
+                      className={`temp-dot-btn ${slotMetric === "humidity" ? "active" : ""}`}
+                      onClick={() => setSlotMetric("humidity")}
+                      title="Humidity"
+                    >
+                      <FaDroplet />
+                    </button>
                   </div>
                 </div>
 
@@ -537,7 +694,7 @@ const Homepage = ({ onClick }: HomepageProps) => {
                       <div className={`time-slot-icon ${slot.active ? "highlight" : ""}`}>
                         {slot.icon}
                       </div>
-                      <span className="time-slot-temp">{slot.temp}°</span>
+                      <span className="time-slot-temp">{slot.val}</span>
                       <span className="time-slot-label">{slot.label}</span>
                     </div>
                   ))}
@@ -553,7 +710,7 @@ const Homepage = ({ onClick }: HomepageProps) => {
 
                 <div className="tomorrow-temp">
                   <div className="val">
-                    {tomorrowData ? `${Math.round(tomorrowData.main.temp)}°C` : `${Math.round(weatherData.main.temp - 2)}°C`}
+                    {tomorrowData ? formatTemp(tomorrowData.main.temp) : formatTemp(weatherData.main.temp - 2)}
                   </div>
                   <div className="condition">
                     {tomorrowData ? tomorrowData.weather[0].main : "Rainy & Breezy"}
@@ -564,36 +721,143 @@ const Homepage = ({ onClick }: HomepageProps) => {
           </>
         )}
 
-        {/* Bookmarks Overlay Drawer if triggered */}
+        {/* Saved Locations Modal / Drawer */}
         <AnimatePresence>
-          {showBookmarksDrawer && (
+          {showSavedLocationsModal && (
             <motion.div
-              className="mt-6 bg-white rounded-2xl p-4 shadow-md"
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
+              className="mt-6 bg-white rounded-2xl p-5 shadow-lg border border-slate-100 relative"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
             >
-              <h4 className="font-bold text-lg mb-3">Saved Locations</h4>
+              <div className="flex justify-between items-center mb-4">
+                <h4 className="font-bold text-lg text-slate-800">Saved Locations</h4>
+                <button
+                  onClick={() => setShowSavedLocationsModal(false)}
+                  className="text-slate-400 hover:text-slate-600 p-1"
+                >
+                  <FaXmark />
+                </button>
+              </div>
+
               {bookmarkDataList.length === 0 ? (
-                <p className="text-sm text-gray-500">No bookmarks added yet.</p>
+                <div className="text-center py-6 text-slate-400 text-sm">
+                  No saved locations yet. Click the bookmark icon in the top header to save a city!
+                </div>
               ) : (
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   {bookmarkDataList.map((item) => (
                     <div
                       key={item.id}
-                      className="p-3 bg-slate-50 rounded-xl flex justify-between items-center cursor-pointer hover:bg-orange-50"
-                      onClick={() => getWeather(item.name)}
+                      className="p-3 bg-slate-50 hover:bg-orange-50 border border-slate-100 rounded-xl flex justify-between items-center cursor-pointer transition-colors"
+                      onClick={() => {
+                        getWeather(item.name);
+                        setShowSavedLocationsModal(false);
+                      }}
                     >
                       <div>
-                        <span className="font-bold text-slate-800">{item.name}</span>
-                        <p className="text-xs text-gray-500">{item.weather[0].description}</p>
+                        <span className="font-bold text-slate-800 block text-sm">{item.name}</span>
+                        <p className="text-xs text-slate-500 capitalize">{item.weather[0].description}</p>
                       </div>
-                      <span className="text-xl font-bold text-orange-500">{Math.round(item.main.temp)}°C</span>
+                      <span className="text-lg font-bold text-orange-500">{formatTemp(item.main.temp)}</span>
                     </div>
                   ))}
                 </div>
               )}
             </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Settings Modal */}
+        <AnimatePresence>
+          {showSettingsModal && (
+            <motion.div
+              className="mt-6 bg-white rounded-2xl p-5 shadow-lg border border-slate-100 relative"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+            >
+              <div className="flex justify-between items-center mb-4">
+                <h4 className="font-bold text-lg text-slate-800">Settings</h4>
+                <button
+                  onClick={() => setShowSettingsModal(false)}
+                  className="text-slate-400 hover:text-slate-600 p-1"
+                >
+                  <FaXmark />
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between py-3 border-b border-slate-100">
+                <div>
+                  <div className="font-semibold text-slate-800 text-sm">Temperature Unit</div>
+                  <div className="text-xs text-slate-400">Switch between Celsius (°C) and Fahrenheit (°F)</div>
+                </div>
+                <div className="flex bg-slate-100 p-1 rounded-xl">
+                  <button
+                    className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                      unit === "C" ? "bg-white text-orange-500 shadow-sm" : "text-slate-500"
+                    }`}
+                    onClick={() => setUnit("C")}
+                  >
+                    °C
+                  </button>
+                  <button
+                    className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                      unit === "F" ? "bg-white text-orange-500 shadow-sm" : "text-slate-500"
+                    }`}
+                    onClick={() => setUnit("F")}
+                  >
+                    °F
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Notifications Modal */}
+        <AnimatePresence>
+          {showNotificationModal && (
+            <div className="fixed inset-0 bg-black/20 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="bg-white rounded-2xl p-5 w-full max-w-sm shadow-xl border border-slate-100"
+              >
+                <div className="flex justify-between items-center mb-4">
+                  <div className="flex items-center gap-2">
+                    <FaBell className="text-orange-500" />
+                    <h4 className="font-bold text-lg text-slate-800">Weather Alerts</h4>
+                  </div>
+                  <button
+                    onClick={() => setShowNotificationModal(false)}
+                    className="text-slate-400 hover:text-slate-600 p-1"
+                  >
+                    <FaXmark />
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="p-3 bg-orange-50 rounded-xl border border-orange-100">
+                    <p className="text-xs font-semibold text-orange-800">
+                      Clear Sky Expected Today in {weatherData?.name || "your area"}
+                    </p>
+                    <p className="text-[11px] text-orange-600 mt-1">
+                      No heavy precipitation predicted for the next 24 hours. Great day for outdoor activities!
+                    </p>
+                  </div>
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                    <p className="text-xs font-semibold text-slate-800">
+                      Air Quality Alert: {getAqiLabel(weatherData?.aqi)}
+                    </p>
+                    <p className="text-[11px] text-slate-500 mt-1">
+                      Air Quality Index is currently sitting at standard baseline levels.
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
           )}
         </AnimatePresence>
       </main>
@@ -610,7 +874,7 @@ const Homepage = ({ onClick }: HomepageProps) => {
                   {weatherData.name}, {weatherData.sys.country}
                 </p>
               </div>
-              <div className="panel-current-temp">{Math.round(weatherData.main.temp)}°C</div>
+              <div className="panel-current-temp">{formatTemp(weatherData.main.temp)}</div>
             </div>
 
             {/* Sun Position Arc */}
@@ -669,7 +933,9 @@ const Homepage = ({ onClick }: HomepageProps) => {
                           <p>{item.condition}</p>
                         </div>
                       </div>
-                      <div className="pred-temp">{item.maxTemp}° / {item.minTemp}°</div>
+                      <div className="pred-temp">
+                        {formatTemp(item.maxTemp)} / {formatTemp(item.minTemp)}
+                      </div>
                     </div>
                   ))
                 ) : (

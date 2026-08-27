@@ -29,6 +29,7 @@ import {
 type WeatherData = {
   id: number;
   name: string;
+  timezone?: number;
   coord?: {
     lat: number;
     lon: number;
@@ -432,7 +433,13 @@ const Homepage = ({ onClick }: HomepageProps) => {
   };
 
   const getDailyTimeSlots = () => {
-    const currentHour = new Date().getHours();
+    let currentHour = new Date().getHours();
+    if (weatherData && typeof weatherData.timezone === "number") {
+      const utcMs = Date.now() + new Date().getTimezoneOffset() * 60000;
+      const cityTime = new Date(utcMs + weatherData.timezone * 1000);
+      currentHour = cityTime.getHours();
+    }
+
     let activeSlotName = "Afternoon";
     if (currentHour >= 5 && currentHour < 12) activeSlotName = "Morning";
     else if (currentHour >= 12 && currentHour < 17) activeSlotName = "Afternoon";

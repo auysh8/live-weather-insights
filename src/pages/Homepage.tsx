@@ -400,6 +400,37 @@ const Homepage = ({ onClick }: HomepageProps) => {
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: true });
   };
 
+  const getUviData = (weather: WeatherData) => {
+    const temp = weather.main.temp;
+    const isClear = weather.weather[0].main.toLowerCase().includes("clear");
+    const uvi = Math.max(1, Math.min(12, Math.round((temp / 4) * (isClear ? 1.4 : 0.7))));
+    let label = "Low";
+    let desc = "Minimal risk from sun exposure.";
+    if (uvi >= 3 && uvi <= 5) {
+      label = "Moderate";
+      desc = "Moderate risk of harm from unprotected sun exposure.";
+    } else if (uvi >= 6 && uvi <= 7) {
+      label = "High";
+      desc = "High risk of harm from unprotected exposure. Wear sunscreen!";
+    } else if (uvi >= 8) {
+      label = "Very High";
+      desc = "Very high risk of harm. Take extra precautions!";
+    }
+    return { uvi, label, desc };
+  };
+
+  const getAqiValue = (aqiNum?: number) => {
+    if (!aqiNum) return 42;
+    switch (aqiNum) {
+      case 1: return 35;
+      case 2: return 75;
+      case 3: return 125;
+      case 4: return 175;
+      case 5: return 240;
+      default: return 42;
+    }
+  };
+
   const getDailyTimeSlots = () => {
     if (!forecastList || forecastList.length === 0) {
       const baseTemp = weatherData ? weatherData.main.temp : 20;
@@ -409,26 +440,26 @@ const Homepage = ({ onClick }: HomepageProps) => {
       if (slotMetric === "wind") {
         return [
           { label: "Morning", val: formatWind(baseWind), icon: <FaWind /> },
-          { label: "Afternoon", val: formatWind(baseWind + 2), icon: <FaWind />, active: true },
-          { label: "Evening", val: formatWind(baseWind + 1), icon: <FaWind /> },
-          { label: "Night", val: formatWind(baseWind - 1), icon: <FaWind /> },
+          { label: "Afternoon", val: formatWind(Math.max(0, baseWind + 1.5)), icon: <FaWind />, active: true },
+          { label: "Evening", val: formatWind(Math.max(0, baseWind + 0.5)), icon: <FaWind /> },
+          { label: "Night", val: formatWind(Math.max(0, baseWind - 1)), icon: <FaWind /> },
         ];
       }
 
       if (slotMetric === "humidity") {
         return [
           { label: "Morning", val: `${baseHum}%`, icon: <FaDroplet /> },
-          { label: "Afternoon", val: `${Math.max(10, baseHum - 10)}%`, icon: <FaDroplet />, active: true },
-          { label: "Evening", val: `${baseHum + 5}%`, icon: <FaDroplet /> },
-          { label: "Night", val: `${baseHum + 10}%`, icon: <FaDroplet /> },
+          { label: "Afternoon", val: `${Math.max(10, baseHum - 5)}%`, icon: <FaDroplet />, active: true },
+          { label: "Evening", val: `${Math.min(100, baseHum + 5)}%`, icon: <FaDroplet /> },
+          { label: "Night", val: `${Math.min(100, baseHum + 10)}%`, icon: <FaDroplet /> },
         ];
       }
 
       return [
         { label: "Morning", val: formatTemp(baseTemp - 2), icon: <FaCloudSun /> },
-        { label: "Afternoon", val: formatTemp(baseTemp + 4), icon: <FaSun />, active: true },
+        { label: "Afternoon", val: formatTemp(baseTemp + 3), icon: <FaSun />, active: true },
         { label: "Evening", val: formatTemp(baseTemp + 1), icon: <FaCloudSun /> },
-        { label: "Night", val: formatTemp(baseTemp - 4), icon: <FaCloud /> },
+        { label: "Night", val: formatTemp(baseTemp - 3), icon: <FaCloud /> },
       ];
     }
 
@@ -464,7 +495,23 @@ const Homepage = ({ onClick }: HomepageProps) => {
   };
 
   const getFiveDayForecast = () => {
-    if (!forecastList || forecastList.length === 0) return [];
+    if (!forecastList || forecastList.length === 0) {
+      // Dynamic fallback based on current date if forecast API hasn't returned
+      const today = new Date();
+      return [1, 2, 3, 4, 5].map((offset) => {
+        const d = new Date(today);
+        d.setDate(today.getDate() + offset);
+        const dateStr = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+        const baseTemp = weatherData ? weatherData.main.temp : 20;
+        return {
+          date: dateStr,
+          condition: weatherData ? weatherData.weather[0].main : "Clear",
+          minTemp: baseTemp - 3,
+          maxTemp: baseTemp + 2,
+          weatherId: weatherData ? weatherData.weather[0].id : 800,
+        };
+      });
+    }
 
     const dailyMap: { [key: string]: { temps: number[]; weather: any; date: string } } = {};
 
@@ -507,6 +554,7 @@ const Homepage = ({ onClick }: HomepageProps) => {
   const dailySlots = getDailyTimeSlots();
   const fiveDayPrediction = getFiveDayForecast();
   const tomorrowData = forecastList.length >= 8 ? forecastList[8] : null;
+  const uviInfo = weatherData ? getUviData(weatherData) : { uvi: 3, label: "Moderate", desc: "Moderate risk." };
 
   return (
     <div className="app-container">
@@ -595,8 +643,8 @@ const Homepage = ({ onClick }: HomepageProps) => {
                 exit={{ opacity: 0, scale: 0.9, y: 10 }}
                 className="user-popover"
               >
-                <div className="user-popover-name">Jack Grealish</div>
-                <div className="user-popover-email">jack@example.com</div>
+                <div className="user-popover-name">Account User</div>
+                <div className="user-popover-email">user@weather.app</div>
                 <button onClick={handleLogout} className="user-popover-logout-btn">
                   <FaRightFromBracket /> Log Out
                 </button>
@@ -616,7 +664,7 @@ const Homepage = ({ onClick }: HomepageProps) => {
             </div>
             <div className="greeting-text">
               <p>Hello,</p>
-              <h2>{token ? "Jack Grealish" : "Guest Explorer"}</h2>
+              <h2>{token ? "Member Explorer" : "Guest Explorer"}</h2>
             </div>
           </div>
 
@@ -702,7 +750,7 @@ const Homepage = ({ onClick }: HomepageProps) => {
                   </div>
 
                   <div className="aqi-value-container">
-                    <span className="aqi-number">{weatherData.aqi ? weatherData.aqi * 78 : 390}</span>
+                    <span className="aqi-number">{getAqiValue(weatherData.aqi)}</span>
                     <span className="aqi-status-pill">{getAqiLabel(weatherData.aqi).toUpperCase()}</span>
                   </div>
 
@@ -784,7 +832,7 @@ const Homepage = ({ onClick }: HomepageProps) => {
                       {tomorrowData ? formatTemp(tomorrowData.main.temp) : formatTemp(weatherData.main.temp - 2)}
                     </div>
                     <div className="condition">
-                      {tomorrowData ? tomorrowData.weather[0].main : "Rainy & Breezy"}
+                      {tomorrowData ? tomorrowData.weather[0].main : weatherData.weather[0].main}
                     </div>
                   </div>
                 </motion.div>
@@ -1114,9 +1162,9 @@ const Homepage = ({ onClick }: HomepageProps) => {
           <>
             <div className="panel-header">
               <div className="location-info">
-                <h2>Sun</h2>
+                <h2>{weatherData.weather[0].main}</h2>
                 <p>
-                  <FaLocationDot className="text-orange-500" />
+                  <FaLocationDot className="icon-orange" />
                   {weatherData.name}, {weatherData.sys.country}
                 </p>
               </div>
@@ -1159,10 +1207,10 @@ const Homepage = ({ onClick }: HomepageProps) => {
             <div className="uvi-card">
               <div className="uvi-header">
                 <FaSun className="uvi-header-icon" />
-                <span className="uvi-val-text">20 UVI</span>
-                <span className="uvi-badge">Moderate</span>
+                <span className="uvi-val-text">{uviInfo.uvi} UVI</span>
+                <span className="uvi-badge">{uviInfo.label}</span>
               </div>
-              <p className="uvi-desc">Moderate risk of harm from unprotected sun exposure.</p>
+              <p className="uvi-desc">{uviInfo.desc}</p>
             </div>
 
             {/* Weather Prediction List */}

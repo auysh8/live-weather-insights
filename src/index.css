@@ -70,27 +70,69 @@ html, body {
 
 /* Sidebar Navigation */
 .sidebar-rail {
-  width: 90px;
+  width: 140px;
   background: #FFFFFF;
   border-right: 1px solid #F1F5F9;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 2rem 0;
+  padding: 1.5rem 0.5rem;
   justify-content: space-between;
   z-index: 10;
   flex-shrink: 0;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-rail.collapsed {
+  width: 70px;
+}
+
+.sidebar-top {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
 }
 
 .sidebar-logo {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.25rem;
+  gap: 0.4rem;
   font-weight: 800;
-  font-size: 0.85rem;
   color: var(--text-main);
   letter-spacing: 0.5px;
+}
+
+.sidebar-logo-text {
+  font-size: 0.7rem;
+  text-align: center;
+  line-height: 1.1;
+  font-weight: 800;
+  color: var(--text-main);
+  max-width: 100px;
+  word-break: break-word;
+}
+
+.sidebar-toggle-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: #F1F5F9;
+  border: none;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
+}
+
+.sidebar-toggle-btn:hover {
+  background: var(--primary-orange-light);
+  color: var(--primary-orange);
 }
 
 .sidebar-logo-icon {

@@ -432,6 +432,13 @@ const Homepage = ({ onClick }: HomepageProps) => {
   };
 
   const getDailyTimeSlots = () => {
+    const currentHour = new Date().getHours();
+    let activeSlotName = "Afternoon";
+    if (currentHour >= 5 && currentHour < 12) activeSlotName = "Morning";
+    else if (currentHour >= 12 && currentHour < 17) activeSlotName = "Afternoon";
+    else if (currentHour >= 17 && currentHour < 21) activeSlotName = "Evening";
+    else activeSlotName = "Night";
+
     if (!forecastList || forecastList.length === 0) {
       const baseTemp = weatherData ? weatherData.main.temp : 20;
       const baseWind = weatherData ? weatherData.wind.speed : 5;
@@ -439,27 +446,27 @@ const Homepage = ({ onClick }: HomepageProps) => {
 
       if (slotMetric === "wind") {
         return [
-          { label: "Morning", val: formatWind(baseWind), icon: <FaWind /> },
-          { label: "Afternoon", val: formatWind(Math.max(0, baseWind + 1.5)), icon: <FaWind />, active: true },
-          { label: "Evening", val: formatWind(Math.max(0, baseWind + 0.5)), icon: <FaWind /> },
-          { label: "Night", val: formatWind(Math.max(0, baseWind - 1)), icon: <FaWind /> },
+          { label: "Morning", val: formatWind(baseWind), icon: <FaWind />, active: activeSlotName === "Morning" },
+          { label: "Afternoon", val: formatWind(Math.max(0, baseWind + 1.5)), icon: <FaWind />, active: activeSlotName === "Afternoon" },
+          { label: "Evening", val: formatWind(Math.max(0, baseWind + 0.5)), icon: <FaWind />, active: activeSlotName === "Evening" },
+          { label: "Night", val: formatWind(Math.max(0, baseWind - 1)), icon: <FaWind />, active: activeSlotName === "Night" },
         ];
       }
 
       if (slotMetric === "humidity") {
         return [
-          { label: "Morning", val: `${baseHum}%`, icon: <FaDroplet /> },
-          { label: "Afternoon", val: `${Math.max(10, baseHum - 5)}%`, icon: <FaDroplet />, active: true },
-          { label: "Evening", val: `${Math.min(100, baseHum + 5)}%`, icon: <FaDroplet /> },
-          { label: "Night", val: `${Math.min(100, baseHum + 10)}%`, icon: <FaDroplet /> },
+          { label: "Morning", val: `${baseHum}%`, icon: <FaDroplet />, active: activeSlotName === "Morning" },
+          { label: "Afternoon", val: `${Math.max(10, baseHum - 5)}%`, icon: <FaDroplet />, active: activeSlotName === "Afternoon" },
+          { label: "Evening", val: `${Math.min(100, baseHum + 5)}%`, icon: <FaDroplet />, active: activeSlotName === "Evening" },
+          { label: "Night", val: `${Math.min(100, baseHum + 10)}%`, icon: <FaDroplet />, active: activeSlotName === "Night" },
         ];
       }
 
       return [
-        { label: "Morning", val: formatTemp(baseTemp - 2), icon: <FaCloudSun /> },
-        { label: "Afternoon", val: formatTemp(baseTemp + 3), icon: <FaSun />, active: true },
-        { label: "Evening", val: formatTemp(baseTemp + 1), icon: <FaCloudSun /> },
-        { label: "Night", val: formatTemp(baseTemp - 3), icon: <FaCloud /> },
+        { label: "Morning", val: formatTemp(baseTemp - 2), icon: <FaCloudSun />, active: activeSlotName === "Morning" },
+        { label: "Afternoon", val: formatTemp(baseTemp + 3), icon: <FaSun />, active: activeSlotName === "Afternoon" },
+        { label: "Evening", val: formatTemp(baseTemp + 1), icon: <FaCloudSun />, active: activeSlotName === "Evening" },
+        { label: "Night", val: formatTemp(baseTemp - 3), icon: <FaCloud />, active: activeSlotName === "Night" },
       ];
     }
 
@@ -470,27 +477,27 @@ const Homepage = ({ onClick }: HomepageProps) => {
 
     if (slotMetric === "wind") {
       return [
-        { label: "Morning", val: formatWind(morning.wind.speed), icon: <FaWind /> },
-        { label: "Afternoon", val: formatWind(afternoon.wind.speed), icon: <FaWind />, active: true },
-        { label: "Evening", val: formatWind(evening.wind.speed), icon: <FaWind /> },
-        { label: "Night", val: formatWind(night.wind.speed), icon: <FaWind /> },
+        { label: "Morning", val: formatWind(morning.wind.speed), icon: <FaWind />, active: activeSlotName === "Morning" },
+        { label: "Afternoon", val: formatWind(afternoon.wind.speed), icon: <FaWind />, active: activeSlotName === "Afternoon" },
+        { label: "Evening", val: formatWind(evening.wind.speed), icon: <FaWind />, active: activeSlotName === "Evening" },
+        { label: "Night", val: formatWind(night.wind.speed), icon: <FaWind />, active: activeSlotName === "Night" },
       ];
     }
 
     if (slotMetric === "humidity") {
       return [
-        { label: "Morning", val: `${morning.main.humidity}%`, icon: <FaDroplet /> },
-        { label: "Afternoon", val: `${afternoon.main.humidity}%`, icon: <FaDroplet />, active: true },
-        { label: "Evening", val: `${evening.main.humidity}%`, icon: <FaDroplet /> },
-        { label: "Night", val: `${night.main.humidity}%`, icon: <FaDroplet /> },
+        { label: "Morning", val: `${morning.main.humidity}%`, icon: <FaDroplet />, active: activeSlotName === "Morning" },
+        { label: "Afternoon", val: `${afternoon.main.humidity}%`, icon: <FaDroplet />, active: activeSlotName === "Afternoon" },
+        { label: "Evening", val: `${evening.main.humidity}%`, icon: <FaDroplet />, active: activeSlotName === "Evening" },
+        { label: "Night", val: `${night.main.humidity}%`, icon: <FaDroplet />, active: activeSlotName === "Night" },
       ];
     }
 
     return [
-      { label: "Morning", val: formatTemp(morning.main.temp), icon: getWeatherIcon(morning.weather[0].id) },
-      { label: "Afternoon", val: formatTemp(afternoon.main.temp), icon: getWeatherIcon(afternoon.weather[0].id), active: true },
-      { label: "Evening", val: formatTemp(evening.main.temp), icon: getWeatherIcon(evening.weather[0].id) },
-      { label: "Night", val: formatTemp(night.main.temp), icon: getWeatherIcon(night.weather[0].id) },
+      { label: "Morning", val: formatTemp(morning.main.temp), icon: getWeatherIcon(morning.weather[0].id), active: activeSlotName === "Morning" },
+      { label: "Afternoon", val: formatTemp(afternoon.main.temp), icon: getWeatherIcon(afternoon.weather[0].id), active: activeSlotName === "Afternoon" },
+      { label: "Evening", val: formatTemp(evening.main.temp), icon: getWeatherIcon(evening.weather[0].id), active: activeSlotName === "Evening" },
+      { label: "Night", val: formatTemp(night.main.temp), icon: getWeatherIcon(night.weather[0].id), active: activeSlotName === "Night" },
     ];
   };
 

@@ -23,7 +23,9 @@ import {
   FaDroplet,
   FaTrash,
   FaSliders,
-  FaRotateRight
+  FaRotateRight,
+  FaChevronLeft,
+  FaChevronRight
 } from "react-icons/fa6";
 
 type WeatherData = {
@@ -133,6 +135,7 @@ const Homepage = ({ onClick }: HomepageProps) => {
 
   // Active View Tab State: 'dashboard' | 'saved' | 'locations' | 'settings'
   const [activeTab, setActiveTab] = useState<"dashboard" | "saved" | "locations" | "settings">("dashboard");
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [unit, setUnit] = useState<"C" | "F">("C");
   const [windUnit, setWindUnit] = useState<"ms" | "kmh">("ms");
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
@@ -573,18 +576,32 @@ const Homepage = ({ onClick }: HomepageProps) => {
   return (
     <div className="app-container">
       {/* Left Navigation Rail */}
-      <aside className="sidebar-rail">
-        <motion.div
-          className="sidebar-logo cursor-pointer"
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => setActiveTab("dashboard")}
-        >
-          <div className="sidebar-logo-icon">
-            <FaSun />
-          </div>
-          <span style={{ fontSize: "0.75rem", textAlign: "center", lineHeight: "1.1" }}>WEATHER</span>
-        </motion.div>
+      <aside className={`sidebar-rail ${isSidebarCollapsed ? "collapsed" : ""}`}>
+        <div className="sidebar-top">
+          <motion.div
+            className="sidebar-logo cursor-pointer"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setActiveTab("dashboard")}
+          >
+            <div className="sidebar-logo-icon">
+              <FaSun />
+            </div>
+            {!isSidebarCollapsed && (
+              <span className="sidebar-logo-text">WEATHER INSIGHTS</span>
+            )}
+          </motion.div>
+
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            className="sidebar-toggle-btn"
+            onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+            title={isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+          >
+            {isSidebarCollapsed ? <FaChevronRight /> : <FaChevronLeft />}
+          </motion.button>
+        </div>
 
         <nav className="sidebar-nav">
           <motion.button

@@ -581,9 +581,9 @@ const Homepage = ({ onClick }: HomepageProps) => {
           onClick={() => setActiveTab("dashboard")}
         >
           <div className="sidebar-logo-icon">
-            <FaCloudSun />
+            <FaSun />
           </div>
-          <span>NGIJIK</span>
+          <span style={{ fontSize: "0.75rem", textAlign: "center", lineHeight: "1.1" }}>WEATHER</span>
         </motion.div>
 
         <nav className="sidebar-nav">
@@ -672,16 +672,6 @@ const Homepage = ({ onClick }: HomepageProps) => {
       <main className="dashboard-main">
         {/* Header Bar */}
         <header className="dashboard-header">
-          <div className="user-greeting">
-            <div className="avatar-container cursor-pointer" onClick={() => !token && onClick()}>
-              <span>👤</span>
-            </div>
-            <div className="greeting-text">
-              <p>Hello,</p>
-              <h2>{token ? "Member Explorer" : "Guest Explorer"}</h2>
-            </div>
-          </div>
-
           <Search_bar onSearch={(city) => {
             getWeather(city);
             setActiveTab("dashboard");

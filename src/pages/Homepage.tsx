@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Search_bar from "../components/Search_bar";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, type Variants } from "framer-motion";
 import { toast } from "react-toastify";
 import {
   FaCompass,
@@ -20,7 +20,10 @@ import {
   FaSmog,
   FaRightFromBracket,
   FaXmark,
-  FaDroplet
+  FaDroplet,
+  FaTrash,
+  FaSliders,
+  FaRotateRight
 } from "react-icons/fa6";
 
 type WeatherData = {
@@ -78,6 +81,47 @@ interface HomepageProps {
   onClick: () => void;
 }
 
+// Typed Animation Variants
+const containerVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.05,
+    },
+  },
+  exit: {
+    opacity: 0,
+    transition: { duration: 0.2 },
+  },
+};
+
+const cardItemVariants: Variants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.4, ease: "easeOut" },
+  },
+};
+
+const modalVariants: Variants = {
+  hidden: { opacity: 0, scale: 0.9, y: 15 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    y: 0,
+    transition: { type: "spring", stiffness: 300, damping: 25 },
+  },
+  exit: {
+    opacity: 0,
+    scale: 0.95,
+    y: 10,
+    transition: { duration: 0.15 },
+  },
+};
+
 const Homepage = ({ onClick }: HomepageProps) => {
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
   const [forecastList, setForecastList] = useState<ForecastItem[]>([]);
@@ -86,12 +130,12 @@ const Homepage = ({ onClick }: HomepageProps) => {
   const [appIsLoading, setAppIsLoading] = useState(false);
   const [iconIndex, setIconIndex] = useState(0);
 
-  // Active UI States
-  const [activeTab, setActiveTab] = useState<"dashboard" | "saved" | "settings">("dashboard");
+  // Active View Tab State: 'dashboard' | 'saved' | 'locations' | 'settings'
+  const [activeTab, setActiveTab] = useState<"dashboard" | "saved" | "locations" | "settings">("dashboard");
   const [unit, setUnit] = useState<"C" | "F">("C");
+  const [windUnit, setWindUnit] = useState<"ms" | "kmh">("ms");
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [showNotificationModal, setShowNotificationModal] = useState(false);
-  const [showSettingsModal, setShowSettingsModal] = useState(false);
-  const [showSavedLocationsModal, setShowSavedLocationsModal] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [slotMetric, setSlotMetric] = useState<"temp" | "wind" | "humidity">("temp");
 
@@ -182,7 +226,7 @@ const Homepage = ({ onClick }: HomepageProps) => {
           getCityName(lat, long);
         },
         () => {
-          toast.info("Could not retrieve exact location. Falling back to default.");
+          toast.info("Could not retrieve exact location. Falling back to London.");
           getWeather("London");
         }
       );
@@ -300,13 +344,20 @@ const Homepage = ({ onClick }: HomepageProps) => {
     return `${Math.round(celsiusTemp)}°C`;
   };
 
+  const formatWind = (msSpeed: number) => {
+    if (windUnit === "kmh") {
+      return `${Math.round(msSpeed * 3.6)} km/h`;
+    }
+    return `${msSpeed.toFixed(1)} m/s`;
+  };
+
   const getWeatherIcon = (conditionId: number) => {
-    if (conditionId >= 200 && conditionId < 300) return <FaBolt className="text-amber-500" />;
-    if (conditionId >= 300 && conditionId < 600) return <FaCloudRain className="text-blue-500" />;
-    if (conditionId >= 600 && conditionId < 700) return <FaSnowflake className="text-cyan-400" />;
-    if (conditionId > 700 && conditionId < 800) return <FaSmog className="text-gray-400" />;
-    if (conditionId === 800) return <FaSun className="text-amber-500" />;
-    return <FaCloudSun className="text-amber-400" />;
+    if (conditionId >= 200 && conditionId < 300) return <FaBolt className="icon-amber" />;
+    if (conditionId >= 300 && conditionId < 600) return <FaCloudRain className="icon-blue" />;
+    if (conditionId >= 600 && conditionId < 700) return <FaSnowflake className="icon-cyan" />;
+    if (conditionId > 700 && conditionId < 800) return <FaSmog className="icon-gray" />;
+    if (conditionId === 800) return <FaSun className="icon-amber" />;
+    return <FaCloudSun className="icon-amber" />;
   };
 
   const getAqiLabel = (aqiValue?: number) => {
@@ -343,14 +394,12 @@ const Homepage = ({ onClick }: HomepageProps) => {
     }
   };
 
-  // Format sunrise / sunset times
   const formatTime = (timestamp?: number) => {
     if (!timestamp) return "06:00 am";
     const date = new Date(timestamp * 1000);
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: true });
   };
 
-  // Extract temperature / metric curve slots (Morning, Afternoon, Evening, Night)
   const getDailyTimeSlots = () => {
     if (!forecastList || forecastList.length === 0) {
       const baseTemp = weatherData ? weatherData.main.temp : 20;
@@ -359,10 +408,10 @@ const Homepage = ({ onClick }: HomepageProps) => {
 
       if (slotMetric === "wind") {
         return [
-          { label: "Morning", val: `${Math.round(baseWind)} m/s`, icon: <FaWind /> },
-          { label: "Afternoon", val: `${Math.round(baseWind + 2)} m/s`, icon: <FaWind />, active: true },
-          { label: "Evening", val: `${Math.round(baseWind + 1)} m/s`, icon: <FaWind /> },
-          { label: "Night", val: `${Math.round(baseWind - 1)} m/s`, icon: <FaWind /> },
+          { label: "Morning", val: formatWind(baseWind), icon: <FaWind /> },
+          { label: "Afternoon", val: formatWind(baseWind + 2), icon: <FaWind />, active: true },
+          { label: "Evening", val: formatWind(baseWind + 1), icon: <FaWind /> },
+          { label: "Night", val: formatWind(baseWind - 1), icon: <FaWind /> },
         ];
       }
 
@@ -383,7 +432,6 @@ const Homepage = ({ onClick }: HomepageProps) => {
       ];
     }
 
-    // Pick 4 forecast items across the day
     const morning = forecastList[1] || forecastList[0];
     const afternoon = forecastList[3] || forecastList[0];
     const evening = forecastList[5] || forecastList[0];
@@ -391,10 +439,10 @@ const Homepage = ({ onClick }: HomepageProps) => {
 
     if (slotMetric === "wind") {
       return [
-        { label: "Morning", val: `${Math.round(morning.wind.speed)} m/s`, icon: <FaWind /> },
-        { label: "Afternoon", val: `${Math.round(afternoon.wind.speed)} m/s`, icon: <FaWind />, active: true },
-        { label: "Evening", val: `${Math.round(evening.wind.speed)} m/s`, icon: <FaWind /> },
-        { label: "Night", val: `${Math.round(night.wind.speed)} m/s`, icon: <FaWind /> },
+        { label: "Morning", val: formatWind(morning.wind.speed), icon: <FaWind /> },
+        { label: "Afternoon", val: formatWind(afternoon.wind.speed), icon: <FaWind />, active: true },
+        { label: "Evening", val: formatWind(evening.wind.speed), icon: <FaWind /> },
+        { label: "Night", val: formatWind(night.wind.speed), icon: <FaWind /> },
       ];
     }
 
@@ -415,7 +463,6 @@ const Homepage = ({ onClick }: HomepageProps) => {
     ];
   };
 
-  // Extract 5-day forecast
   const getFiveDayForecast = () => {
     if (!forecastList || forecastList.length === 0) return [];
 
@@ -452,7 +499,7 @@ const Homepage = ({ onClick }: HomepageProps) => {
   if (appIsLoading) {
     return (
       <div className="loading_screen">
-        <i className={`${loadingIcons[iconIndex]} text-4xl animate-bounce`}></i>
+        <i className={`${loadingIcons[iconIndex]} fa-2x`}></i>
       </div>
     );
   }
@@ -465,56 +512,67 @@ const Homepage = ({ onClick }: HomepageProps) => {
     <div className="app-container">
       {/* Left Navigation Rail */}
       <aside className="sidebar-rail">
-        <div className="sidebar-logo cursor-pointer" onClick={() => { setActiveTab("dashboard"); setShowSavedLocationsModal(false); setShowSettingsModal(false); }}>
+        <motion.div
+          className="sidebar-logo cursor-pointer"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => setActiveTab("dashboard")}
+        >
           <div className="sidebar-logo-icon">
             <FaCloudSun />
           </div>
           <span>NGIJIK</span>
-        </div>
+        </motion.div>
 
         <nav className="sidebar-nav">
-          <button
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
             className={`nav-item ${activeTab === "dashboard" ? "active" : ""}`}
             title="Dashboard"
-            onClick={() => {
-              setActiveTab("dashboard");
-              setShowSavedLocationsModal(false);
-              setShowSettingsModal(false);
-            }}
+            onClick={() => setActiveTab("dashboard")}
           >
             <FaBookmark />
-          </button>
-          <button
+          </motion.button>
+
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
             className={`nav-item ${activeTab === "saved" ? "active" : ""}`}
             title="Saved Locations"
-            onClick={() => {
-              setActiveTab("saved");
-              setShowSavedLocationsModal(true);
-            }}
+            onClick={() => setActiveTab("saved")}
           >
             <FaCompass />
-          </button>
-          <button
-            className="nav-item"
-            title="Locate Me"
-            onClick={handleCurrentLocationSearch}
-          >
-            <FaLocationDot />
-          </button>
-          <button
-            className={`nav-item ${activeTab === "settings" ? "active" : ""}`}
-            title="Settings"
+          </motion.button>
+
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            className={`nav-item ${activeTab === "locations" ? "active" : ""}`}
+            title="Current Location"
             onClick={() => {
-              setActiveTab("settings");
-              setShowSettingsModal(true);
+              setActiveTab("locations");
+              handleCurrentLocationSearch();
             }}
           >
+            <FaLocationDot />
+          </motion.button>
+
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            className={`nav-item ${activeTab === "settings" ? "active" : ""}`}
+            title="Settings"
+            onClick={() => setActiveTab("settings")}
+          >
             <FaGear />
-          </button>
+          </motion.button>
         </nav>
 
-        <div className="sidebar-footer relative">
-          <button
+        <div className="sidebar-footer" style={{ position: "relative" }}>
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
             className="nav-item"
             onClick={() => {
               if (token) {
@@ -526,23 +584,20 @@ const Homepage = ({ onClick }: HomepageProps) => {
             title="Account"
           >
             <i className="fa-solid fa-user"></i>
-          </button>
+          </motion.button>
 
           {/* User Popover */}
           <AnimatePresence>
             {showUserMenu && token && (
               <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                className="absolute left-16 bottom-0 w-48 bg-white rounded-xl shadow-xl border border-slate-100 p-3 z-50"
+                initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 10 }}
+                className="user-popover"
               >
-                <div className="text-sm font-bold text-slate-800 mb-1">Jack Grealish</div>
-                <div className="text-xs text-slate-400 mb-3">jack@example.com</div>
-                <button
-                  onClick={handleLogout}
-                  className="w-full text-left flex items-center gap-2 text-red-500 hover:bg-red-50 p-2 rounded-lg text-xs font-semibold"
-                >
+                <div className="user-popover-name">Jack Grealish</div>
+                <div className="user-popover-email">jack@example.com</div>
+                <button onClick={handleLogout} className="user-popover-logout-btn">
                   <FaRightFromBracket /> Log Out
                 </button>
               </motion.div>
@@ -565,293 +620,484 @@ const Homepage = ({ onClick }: HomepageProps) => {
             </div>
           </div>
 
-          <Search_bar onSearch={getWeather} />
+          <Search_bar onSearch={(city) => {
+            getWeather(city);
+            setActiveTab("dashboard");
+          }} />
 
           <div className="header-actions">
-            <button
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
               className="header-icon-btn"
               onClick={() => handleBookmark(weatherData?.name || "")}
               title="Bookmark current location"
             >
               {weatherData && bookmarks.includes(weatherData.name) ? (
-                <FaBookmark className="text-orange-500" />
+                <FaBookmark className="icon-orange" />
               ) : (
                 <FaRegBookmark />
               )}
-            </button>
-            <button
+            </motion.button>
+
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
               className="header-icon-btn"
               onClick={() => setShowNotificationModal(true)}
               title="Notifications"
             >
               <FaBell />
-            </button>
+            </motion.button>
           </div>
         </header>
 
-        {/* Dashboard Grid Content */}
-        {weatherData && (
-          <>
-            <div className="dashboard-grid">
-              {/* Weather Hero Card */}
-              <div className="weather-hero-card">
-                <div className="weather-hero-header">
-                  <div className="weather-hero-title">
-                    <h3>Weather</h3>
-                    <p>What's the weather today?</p>
-                  </div>
-                </div>
-
-                <div className="weather-hero-temp">
-                  <div className="temp-val">{formatTemp(weatherData.main.temp)}</div>
-                  <div className="weather-desc">{weatherData.weather[0].description}</div>
-                </div>
-
-                <div className="weather-hero-badges">
-                  <div className="hero-badge">
-                    <span className="badge-label">Pressure</span>
-                    <span className="badge-value">{weatherData.main.pressure}mb</span>
-                  </div>
-                  <div className="hero-badge highlight-green">
-                    <span className="badge-label">Visibility</span>
-                    <span className="badge-value">{(weatherData.visibility / 1000).toFixed(1)} km</span>
-                  </div>
-                  <div className="hero-badge highlight-blue">
-                    <span className="badge-label">Humidity</span>
-                    <span className="badge-value">{weatherData.main.humidity}%</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Air Quality Hero Card */}
-              <div className="air-quality-card">
-                <div className="aqi-header">
-                  <h3>Air Quality</h3>
-                  <p>Main pollution : PM 2.5</p>
-                </div>
-
-                <div className="aqi-value-container">
-                  <span className="aqi-number">{weatherData.aqi ? weatherData.aqi * 78 : 390}</span>
-                  <span className="aqi-status-pill">{getAqiLabel(weatherData.aqi).toUpperCase()}</span>
-                </div>
-
-                <div className="aqi-wind-info">
-                  <FaWind className="inline mr-2" />
-                  <span>Wind Speed: {weatherData.wind.speed} m/s</span>
-                </div>
-
-                <div className="aqi-slider-box">
-                  <div className="aqi-labels">
-                    <span>Good</span>
-                    <span className="font-bold text-slate-800">{getAqiLabel(weatherData.aqi)}</span>
-                    <span>Hazardous</span>
-                  </div>
-                  <div className="aqi-progress-bar">
-                    <div className="aqi-progress-fill" style={{ width: getAqiWidth(weatherData.aqi) }}></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Bottom Row Grid */}
-            <div className="dashboard-bottom-grid">
-              {/* Daily Temperature / Metrics Curve */}
-              <div className="temp-curve-card">
-                <div className="card-title-bar">
-                  <h3>
-                    {slotMetric === "temp" && "How's the temperature today?"}
-                    {slotMetric === "wind" && "How's the wind speed today?"}
-                    {slotMetric === "humidity" && "How's the humidity level today?"}
-                  </h3>
-                  <div className="temp-dots-nav">
-                    <button
-                      className={`temp-dot-btn ${slotMetric === "temp" ? "active" : ""}`}
-                      onClick={() => setSlotMetric("temp")}
-                      title="Temperature"
-                    >
-                      <FaSun />
-                    </button>
-                    <button
-                      className={`temp-dot-btn ${slotMetric === "wind" ? "active" : ""}`}
-                      onClick={() => setSlotMetric("wind")}
-                      title="Wind Speed"
-                    >
-                      <FaWind />
-                    </button>
-                    <button
-                      className={`temp-dot-btn ${slotMetric === "humidity" ? "active" : ""}`}
-                      onClick={() => setSlotMetric("humidity")}
-                      title="Humidity"
-                    >
-                      <FaDroplet />
-                    </button>
-                  </div>
-                </div>
-
-                <div className="temp-time-slots">
-                  {dailySlots.map((slot, idx) => (
-                    <div className="time-slot" key={idx}>
-                      <div className={`time-slot-icon ${slot.active ? "highlight" : ""}`}>
-                        {slot.icon}
-                      </div>
-                      <span className="time-slot-temp">{slot.val}</span>
-                      <span className="time-slot-label">{slot.label}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Tomorrow Overview Card */}
-              <div className="tomorrow-card">
-                <div>
-                  <span className="tag">Tomorrow</span>
-                  <h3>{weatherData.name}</h3>
-                </div>
-
-                <div className="tomorrow-temp">
-                  <div className="val">
-                    {tomorrowData ? formatTemp(tomorrowData.main.temp) : formatTemp(weatherData.main.temp - 2)}
-                  </div>
-                  <div className="condition">
-                    {tomorrowData ? tomorrowData.weather[0].main : "Rainy & Breezy"}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </>
-        )}
-
-        {/* Saved Locations Modal / Drawer */}
-        <AnimatePresence>
-          {showSavedLocationsModal && (
+        {/* Dynamic View Switcher with Framer Motion transitions */}
+        <AnimatePresence mode="wait">
+          {activeTab === "dashboard" && weatherData && (
             <motion.div
-              className="mt-6 bg-white rounded-2xl p-5 shadow-lg border border-slate-100 relative"
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
+              key="dashboard-view"
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}
             >
-              <div className="flex justify-between items-center mb-4">
-                <h4 className="font-bold text-lg text-slate-800">Saved Locations</h4>
-                <button
-                  onClick={() => setShowSavedLocationsModal(false)}
-                  className="text-slate-400 hover:text-slate-600 p-1"
+              <div className="dashboard-grid">
+                {/* Weather Hero Card */}
+                <motion.div variants={cardItemVariants} className="weather-hero-card">
+                  <div className="weather-hero-header">
+                    <div className="weather-hero-title">
+                      <h3>Weather</h3>
+                      <p>What's the weather today?</p>
+                    </div>
+                  </div>
+
+                  <div className="weather-hero-temp">
+                    <div className="temp-val">{formatTemp(weatherData.main.temp)}</div>
+                    <div className="weather-desc">{weatherData.weather[0].description}</div>
+                  </div>
+
+                  <div className="weather-hero-badges">
+                    <div className="hero-badge">
+                      <span className="badge-label">Pressure</span>
+                      <span className="badge-value">{weatherData.main.pressure}mb</span>
+                    </div>
+                    <div className="hero-badge highlight-green">
+                      <span className="badge-label">Visibility</span>
+                      <span className="badge-value">{(weatherData.visibility / 1000).toFixed(1)} km</span>
+                    </div>
+                    <div className="hero-badge highlight-blue">
+                      <span className="badge-label">Humidity</span>
+                      <span className="badge-value">{weatherData.main.humidity}%</span>
+                    </div>
+                  </div>
+                </motion.div>
+
+                {/* Air Quality Hero Card */}
+                <motion.div variants={cardItemVariants} className="air-quality-card">
+                  <div className="aqi-header">
+                    <h3>Air Quality</h3>
+                    <p>Main pollution : PM 2.5</p>
+                  </div>
+
+                  <div className="aqi-value-container">
+                    <span className="aqi-number">{weatherData.aqi ? weatherData.aqi * 78 : 390}</span>
+                    <span className="aqi-status-pill">{getAqiLabel(weatherData.aqi).toUpperCase()}</span>
+                  </div>
+
+                  <div className="aqi-wind-info">
+                    <FaWind className="inline mr-2" />
+                    <span>Wind Speed: {formatWind(weatherData.wind.speed)}</span>
+                  </div>
+
+                  <div className="aqi-slider-box">
+                    <div className="aqi-labels">
+                      <span>Good</span>
+                      <span style={{ fontWeight: 700, color: "var(--text-main)" }}>{getAqiLabel(weatherData.aqi)}</span>
+                      <span>Hazardous</span>
+                    </div>
+                    <div className="aqi-progress-bar">
+                      <div className="aqi-progress-fill" style={{ width: getAqiWidth(weatherData.aqi) }}></div>
+                    </div>
+                  </div>
+                </motion.div>
+              </div>
+
+              {/* Bottom Row Grid */}
+              <div className="dashboard-bottom-grid">
+                {/* Daily Temperature / Metrics Curve */}
+                <motion.div variants={cardItemVariants} className="temp-curve-card">
+                  <div className="card-title-bar">
+                    <h3>
+                      {slotMetric === "temp" && "How's the temperature today?"}
+                      {slotMetric === "wind" && "How's the wind speed today?"}
+                      {slotMetric === "humidity" && "How's the humidity level today?"}
+                    </h3>
+                    <div className="temp-dots-nav">
+                      <button
+                        className={`temp-dot-btn ${slotMetric === "temp" ? "active" : ""}`}
+                        onClick={() => setSlotMetric("temp")}
+                        title="Temperature"
+                      >
+                        <FaSun />
+                      </button>
+                      <button
+                        className={`temp-dot-btn ${slotMetric === "wind" ? "active" : ""}`}
+                        onClick={() => setSlotMetric("wind")}
+                        title="Wind Speed"
+                      >
+                        <FaWind />
+                      </button>
+                      <button
+                        className={`temp-dot-btn ${slotMetric === "humidity" ? "active" : ""}`}
+                        onClick={() => setSlotMetric("humidity")}
+                        title="Humidity"
+                      >
+                        <FaDroplet />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="temp-time-slots">
+                    {dailySlots.map((slot, idx) => (
+                      <div className="time-slot" key={idx}>
+                        <div className={`time-slot-icon ${slot.active ? "highlight" : ""}`}>
+                          {slot.icon}
+                        </div>
+                        <span className="time-slot-temp">{slot.val}</span>
+                        <span className="time-slot-label">{slot.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+
+                {/* Tomorrow Overview Card */}
+                <motion.div variants={cardItemVariants} className="tomorrow-card">
+                  <div>
+                    <span className="tag">Tomorrow</span>
+                    <h3>{weatherData.name}</h3>
+                  </div>
+
+                  <div className="tomorrow-temp">
+                    <div className="val">
+                      {tomorrowData ? formatTemp(tomorrowData.main.temp) : formatTemp(weatherData.main.temp - 2)}
+                    </div>
+                    <div className="condition">
+                      {tomorrowData ? tomorrowData.weather[0].main : "Rainy & Breezy"}
+                    </div>
+                  </div>
+                </motion.div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* VIEW: Saved Locations */}
+          {activeTab === "saved" && (
+            <motion.div
+              key="saved-view"
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              className="view-panel-card"
+            >
+              <div className="view-header">
+                <div>
+                  <h2 className="view-header-title">Saved Locations</h2>
+                  <p className="view-header-sub">Manage your bookmarked cities & quick forecast access</p>
+                </div>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setActiveTab("dashboard")}
+                  className="view-action-btn"
                 >
-                  <FaXmark />
-                </button>
+                  Back to Dashboard
+                </motion.button>
               </div>
 
               {bookmarkDataList.length === 0 ? (
-                <div className="text-center py-6 text-slate-400 text-sm">
-                  No saved locations yet. Click the bookmark icon in the top header to save a city!
+                <div className="empty-saved-state">
+                  <div className="empty-icon-wrapper">
+                    <FaBookmark />
+                  </div>
+                  <h3>No Saved Locations Yet</h3>
+                  <p>
+                    Search for any city in the header search bar and tap the bookmark icon to save it here.
+                  </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <div className="saved-locations-grid">
                   {bookmarkDataList.map((item) => (
-                    <div
+                    <motion.div
                       key={item.id}
-                      className="p-3 bg-slate-50 hover:bg-orange-50 border border-slate-100 rounded-xl flex justify-between items-center cursor-pointer transition-colors"
+                      variants={cardItemVariants}
+                      whileHover={{ y: -4 }}
+                      className="saved-card"
                       onClick={() => {
                         getWeather(item.name);
-                        setShowSavedLocationsModal(false);
+                        setActiveTab("dashboard");
                       }}
                     >
-                      <div>
-                        <span className="font-bold text-slate-800 block text-sm">{item.name}</span>
-                        <p className="text-xs text-slate-500 capitalize">{item.weather[0].description}</p>
+                      <div className="saved-card-header">
+                        <div>
+                          <h4>{item.name}</h4>
+                          <span>{item.sys.country}</span>
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleBookmark(item.name);
+                          }}
+                          className="saved-card-trash-btn"
+                          title="Remove bookmark"
+                        >
+                          <FaTrash />
+                        </button>
                       </div>
-                      <span className="text-lg font-bold text-orange-500">{formatTemp(item.main.temp)}</span>
-                    </div>
+
+                      <div className="saved-card-body">
+                        <div>
+                          <p className="saved-card-temp">{formatTemp(item.main.temp)}</p>
+                          <p className="saved-card-desc">{item.weather[0].description}</p>
+                        </div>
+                        <div className="saved-card-details">
+                          <p>Humidity: {item.main.humidity}%</p>
+                          <p>Wind: {formatWind(item.wind.speed)}</p>
+                        </div>
+                      </div>
+                    </motion.div>
                   ))}
                 </div>
               )}
             </motion.div>
           )}
-        </AnimatePresence>
 
-        {/* Settings Modal */}
-        <AnimatePresence>
-          {showSettingsModal && (
+          {/* VIEW: Location / Geolocation Overview */}
+          {activeTab === "locations" && weatherData && (
             <motion.div
-              className="mt-6 bg-white rounded-2xl p-5 shadow-lg border border-slate-100 relative"
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
+              key="locations-view"
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              className="view-panel-card"
             >
-              <div className="flex justify-between items-center mb-4">
-                <h4 className="font-bold text-lg text-slate-800">Settings</h4>
-                <button
-                  onClick={() => setShowSettingsModal(false)}
-                  className="text-slate-400 hover:text-slate-600 p-1"
+              <div className="view-header">
+                <div>
+                  <h2 className="view-header-title">Current Location View</h2>
+                  <p className="view-header-sub">Real-time GPS detected coordinates and weather</p>
+                </div>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleCurrentLocationSearch}
+                  className="view-action-btn btn-primary"
                 >
-                  <FaXmark />
-                </button>
+                  <FaRotateRight /> Refresh Geolocation
+                </motion.button>
               </div>
 
-              <div className="flex items-center justify-between py-3 border-b border-slate-100">
+              <div className="location-view-grid">
+                <motion.div variants={cardItemVariants} className="location-info-card">
+                  <div className="location-card-title">
+                    <div className="location-icon-badge">
+                      <FaLocationDot />
+                    </div>
+                    <div>
+                      <h3>{weatherData.name}</h3>
+                      <p>Country Code: {weatherData.sys.country}</p>
+                    </div>
+                  </div>
+
+                  <div className="location-table">
+                    <div className="location-row">
+                      <label>Latitude</label>
+                      <span>{weatherData.coord?.lat || "N/A"}</span>
+                    </div>
+                    <div className="location-row">
+                      <label>Longitude</label>
+                      <span>{weatherData.coord?.lon || "N/A"}</span>
+                    </div>
+                    <div className="location-row">
+                      <label>Current Temp</label>
+                      <span className="icon-orange">{formatTemp(weatherData.main.temp)}</span>
+                    </div>
+                    <div className="location-row">
+                      <label>Condition</label>
+                      <span style={{ textTransform: "capitalize" }}>{weatherData.weather[0].description}</span>
+                    </div>
+                  </div>
+                </motion.div>
+
+                <motion.div variants={cardItemVariants} className="live-gps-card">
+                  <div>
+                    <span className="gps-badge">Live GPS Data</span>
+                    <h3>{weatherData.name}</h3>
+                    <p>{weatherData.weather[0].main} • Feels like {formatTemp(weatherData.main.feels_like)}</p>
+                  </div>
+
+                  <div className="gps-metrics-grid">
+                    <div className="gps-metric">
+                      <label>Wind Speed</label>
+                      <p>{formatWind(weatherData.wind.speed)}</p>
+                    </div>
+                    <div className="gps-metric">
+                      <label>Air Quality</label>
+                      <p>{getAqiLabel(weatherData.aqi)}</p>
+                    </div>
+                  </div>
+                </motion.div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* VIEW: Settings View */}
+          {activeTab === "settings" && (
+            <motion.div
+              key="settings-view"
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              className="view-panel-card"
+            >
+              <div className="view-header">
                 <div>
-                  <div className="font-semibold text-slate-800 text-sm">Temperature Unit</div>
-                  <div className="text-xs text-slate-400">Switch between Celsius (°C) and Fahrenheit (°F)</div>
+                  <h2 className="view-header-title">Preferences & Settings</h2>
+                  <p className="view-header-sub">Customize display units and app configuration</p>
                 </div>
-                <div className="flex bg-slate-100 p-1 rounded-xl">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setActiveTab("dashboard")}
+                  className="view-action-btn"
+                >
+                  Back to Dashboard
+                </motion.button>
+              </div>
+
+              <div className="settings-list">
+                {/* Temperature Unit Setting */}
+                <motion.div variants={cardItemVariants} className="setting-item">
+                  <div className="setting-item-left">
+                    <div className="setting-icon-box orange">
+                      <FaSliders />
+                    </div>
+                    <div>
+                      <h4 className="setting-item-title">Temperature Unit</h4>
+                      <p className="setting-item-sub">Choose between Celsius (°C) and Fahrenheit (°F)</p>
+                    </div>
+                  </div>
+
+                  <div className="setting-toggle-group">
+                    <button
+                      className={`toggle-btn ${unit === "C" ? "active" : ""}`}
+                      onClick={() => setUnit("C")}
+                    >
+                      °C
+                    </button>
+                    <button
+                      className={`toggle-btn ${unit === "F" ? "active" : ""}`}
+                      onClick={() => setUnit("F")}
+                    >
+                      °F
+                    </button>
+                  </div>
+                </motion.div>
+
+                {/* Wind Unit Setting */}
+                <motion.div variants={cardItemVariants} className="setting-item">
+                  <div className="setting-item-left">
+                    <div className="setting-icon-box blue">
+                      <FaWind />
+                    </div>
+                    <div>
+                      <h4 className="setting-item-title">Wind Speed Unit</h4>
+                      <p className="setting-item-sub">Choose between meters/second (m/s) and km/h</p>
+                    </div>
+                  </div>
+
+                  <div className="setting-toggle-group">
+                    <button
+                      className={`toggle-btn ${windUnit === "ms" ? "active blue" : ""}`}
+                      onClick={() => setWindUnit("ms")}
+                    >
+                      m/s
+                    </button>
+                    <button
+                      className={`toggle-btn ${windUnit === "kmh" ? "active blue" : ""}`}
+                      onClick={() => setWindUnit("kmh")}
+                    >
+                      km/h
+                    </button>
+                  </div>
+                </motion.div>
+
+                {/* Notifications Setting */}
+                <motion.div variants={cardItemVariants} className="setting-item">
+                  <div className="setting-item-left">
+                    <div className="setting-icon-box amber">
+                      <FaBell />
+                    </div>
+                    <div>
+                      <h4 className="setting-item-title">Weather Alerts & Notifications</h4>
+                      <p className="setting-item-sub">Enable real-time severe weather alert digests</p>
+                    </div>
+                  </div>
+
                   <button
-                    className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
-                      unit === "C" ? "bg-white text-orange-500 shadow-sm" : "text-slate-500"
-                    }`}
-                    onClick={() => setUnit("C")}
+                    onClick={() => setNotificationsEnabled(!notificationsEnabled)}
+                    className={`switch-track ${notificationsEnabled ? "on" : "off"}`}
                   >
-                    °C
+                    <motion.div
+                      layout
+                      className="switch-thumb"
+                      animate={{ x: notificationsEnabled ? 22 : 0 }}
+                      transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                    />
                   </button>
-                  <button
-                    className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
-                      unit === "F" ? "bg-white text-orange-500 shadow-sm" : "text-slate-500"
-                    }`}
-                    onClick={() => setUnit("F")}
-                  >
-                    °F
-                  </button>
-                </div>
+                </motion.div>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Notifications Modal */}
+        {/* Floating Notifications Modal */}
         <AnimatePresence>
           {showNotificationModal && (
-            <div className="fixed inset-0 bg-black/20 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+            <div className="modal-overlay">
               <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                className="bg-white rounded-2xl p-5 w-full max-w-sm shadow-xl border border-slate-100"
+                variants={modalVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                className="modal-card"
               >
-                <div className="flex justify-between items-center mb-4">
-                  <div className="flex items-center gap-2">
-                    <FaBell className="text-orange-500" />
-                    <h4 className="font-bold text-lg text-slate-800">Weather Alerts</h4>
+                <div className="modal-header">
+                  <div className="modal-title">
+                    <FaBell className="icon-orange" />
+                    <h4>Weather Alerts</h4>
                   </div>
                   <button
                     onClick={() => setShowNotificationModal(false)}
-                    className="text-slate-400 hover:text-slate-600 p-1"
+                    className="modal-close-btn"
                   >
                     <FaXmark />
                   </button>
                 </div>
 
-                <div className="space-y-3">
-                  <div className="p-3 bg-orange-50 rounded-xl border border-orange-100">
-                    <p className="text-xs font-semibold text-orange-800">
-                      Clear Sky Expected Today in {weatherData?.name || "your area"}
-                    </p>
-                    <p className="text-[11px] text-orange-600 mt-1">
+                <div className="modal-body">
+                  <div className="alert-box alert-box-accent">
+                    <h5>Clear Sky Expected Today in {weatherData?.name || "your area"}</h5>
+                    <p>
                       No heavy precipitation predicted for the next 24 hours. Great day for outdoor activities!
                     </p>
                   </div>
-                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                    <p className="text-xs font-semibold text-slate-800">
-                      Air Quality Alert: {getAqiLabel(weatherData?.aqi)}
-                    </p>
-                    <p className="text-[11px] text-slate-500 mt-1">
+                  <div className="alert-box alert-box-normal">
+                    <h5>Air Quality Alert: {getAqiLabel(weatherData?.aqi)}</h5>
+                    <p>
                       Air Quality Index is currently sitting at standard baseline levels.
                     </p>
                   </div>
@@ -964,7 +1210,7 @@ const Homepage = ({ onClick }: HomepageProps) => {
                 )}
               </div>
 
-              <Link to={`/forecast/${weatherData.name}`}>
+                  <Link to={`/forecast/${weatherData.name}`} style={{ textDecoration: "none" }}>
                 <button className="next-days-btn">Next 5 Days Detailed Forecast</button>
               </Link>
             </div>

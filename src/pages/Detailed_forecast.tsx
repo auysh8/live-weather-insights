@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
+import { FaArrowLeft } from "react-icons/fa6";
 
 type ForecastItem = {
   dt: number;
@@ -25,6 +26,10 @@ type ForecastItem = {
 type WeatherData = {
   city: {
     name: string;
+    coord: {
+      lat: number;
+      lon: number;
+    };
   };
   list: ForecastItem[];
   aqi: number;
@@ -64,9 +69,8 @@ const Detailed_forecast = () => {
           throw new Error("City not found");
         }
         const data = await response.json();
-        const aqi =await getAqi(data.city.coord.lat , data.city.coord.lon);
-        await new Promise((r) => setTimeout(r, 4000)); // 1.5s delay
-        setWeatherData({...data , aqi});
+        const aqi = await getAqi(data.city.coord.lat, data.city.coord.lon);
+        setWeatherData({ ...data, aqi });
       } catch (error) {
         if (error instanceof Error) {
           alert(error.message);
@@ -77,29 +81,30 @@ const Detailed_forecast = () => {
     };
     getWeather();
   }, [city]);
+
   const handleAqiColor = (aqiValue: number) => {
-    if (aqiValue <= 1) return "#4ade80"; // Green (Good)
-    if (aqiValue === 2) return "#facc15"; // Yellow (Fair)
-    if (aqiValue === 3) return "#fb923c"; // Orange (Moderate)
-    return "#ef4444"; // Red (Poor)
+    if (aqiValue <= 1) return "#4ade80";
+    if (aqiValue === 2) return "#facc15";
+    if (aqiValue === 3) return "#fb923c";
+    return "#ef4444";
   };
 
-  const handleAQI = (value:number) => {
+  const handleAQI = (value: number) => {
     const labels = ["Unknown", "Good", "Fair", "Moderate", "Poor", "Very Poor"];
-    return labels[value];
+    return labels[value] || "Good";
   };
 
-  const getAqi = async(lat: number , lon:number)=>{
+  const getAqi = async (lat: number, lon: number) => {
     const url = `${API_BASE_URL}/api/AQI?lat=${lat}&lon=${lon}`;
-    try{
+    try {
       const response = await fetch(url);
       const data = await response.json();
       return data.list[0].main.aqi;
+    } catch (error) {
+      return 1;
     }
-    catch(error){
-      console.error(error);
-    }
-  }
+  };
+
   if (isLoading) {
     return (
       <motion.div
@@ -111,7 +116,7 @@ const Detailed_forecast = () => {
       >
         <AnimatePresence>
           <motion.i
-            key={loadingIcons[iconIndex]} // A unique key is CRITICAL
+            key={loadingIcons[iconIndex]}
             className={loadingIcons[iconIndex]}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -135,171 +140,143 @@ const Detailed_forecast = () => {
       const dailyData: Record<string, number[]> = {};
       const dailyIcon: Record<string, number[]> = {};
       weatherData.list.forEach((i: ForecastItem) => {
-        const date = i.dt_txt.split(" ")[0];
-        if (!dailyData[date]) {
-          dailyData[date] = [];
-          dailyIcon[date] = [];
+        const dateStr = i.dt_txt.split(" ")[0];
+        if (!dailyData[dateStr]) {
+          dailyData[dateStr] = [];
+          dailyIcon[dateStr] = [];
         }
-        if (i.dt_txt.split(" ")[1] === "00:00:00") {
-          dailyIcon[date].push(i.weather[0].id);
+        if (i.dt_txt.split(" ")[1] === "00:00:00" || dailyIcon[dateStr].length === 0) {
+          dailyIcon[dateStr].push(i.weather[0].id);
         }
-        dailyData[date].push(i.main.temp);
+        dailyData[dateStr].push(i.main.temp);
       });
       return { dailyData, dailyIcon };
     };
+
     const { dailyData, dailyIcon } = processDailyData();
 
-    const min_temp = (date: string) => {
-      return Math.min(...dailyData[date]);
-    };
-
-    const max_temp = (date: string) => {
-      return Math.max(...dailyData[date]);
-    };
-
-    const getDay = (date: string) => {
-      const weekDay = new Date(date);
+    const min_temp = (dateStr: string) => Math.min(...dailyData[dateStr]);
+    const max_temp = (dateStr: string) => Math.max(...dailyData[dateStr]);
+    const getDayName = (dateStr: string) => {
+      const weekDay = new Date(dateStr);
       return weekDay.toLocaleDateString("en-us", { weekday: "long" });
     };
 
     const hourlyForecast: ForecastItem[] = weatherData.list.slice(1, 17);
 
     const getIcons = (conditionId: number) => {
-      if (conditionId >= 200 && conditionId < 300) {
-        return "fa-solid fa-cloud-bolt";
-      }
-      if (conditionId >= 300 && conditionId < 600) {
-        return "fa-solid fa-cloud-showers-heavy";
-      }
-      if (conditionId >= 600 && conditionId < 700) {
-        return "fa-solid fa-snowflake";
-      }
-      if (conditionId > 700 && conditionId < 800) {
-        return "fa-solid fa-smog";
-      }
-      if (conditionId > 800 && conditionId < 805) {
-        return "fa-solid fa-cloud";
-      }
-      if (conditionId === 800) {
-        return "fa-solid fa-circle";
-      }
+      if (conditionId >= 200 && conditionId < 300) return "fa-solid fa-cloud-bolt";
+      if (conditionId >= 300 && conditionId < 600) return "fa-solid fa-cloud-showers-heavy";
+      if (conditionId >= 600 && conditionId < 700) return "fa-solid fa-snowflake";
+      if (conditionId > 700 && conditionId < 800) return "fa-solid fa-smog";
+      if (conditionId > 800 && conditionId < 805) return "fa-solid fa-cloud";
+      if (conditionId === 800) return "fa-solid fa-circle";
       return "fa-solid fa-cloud";
     };
 
     return (
-      <div className="forecast_page">
-        <div className="forecast_header">
-          <span className="forecast_header_location">
-            {weatherData.city.name}
-          </span>
-          <span className="forecast_header_date">{day}</span>
+      <div className="forecast-detail-container">
+        <div className="forecast-detail-header">
+          <Link to="/" className="back-link">
+            <FaArrowLeft /> Back to Dashboard
+          </Link>
+          <div className="forecast-detail-title">
+            <h1>{weatherData.city.name}</h1>
+            <p>{day}</p>
+          </div>
         </div>
 
-        <div className="current_weather">
-          <div className="current_weather_icon">
-            <i className={getIcons(weatherData.list[0].weather[0].id)}></i>
-          </div>
-          <div className="current_weather_temp_des">
-            <span className="current_weather_temp">
+        <div className="forecast-hero-card">
+          <div className="forecast-hero-text">
+            <span className="forecast-hero-temp">
               {Math.round(hourlyForecast[0].main.temp)}°C
             </span>
-            <span className="current_weather_description">
+            <p className="forecast-hero-desc">
               {weatherData.list[0].weather[0].description}
-            </span>
-            <span>AQI : <span style={{color : handleAqiColor(weatherData.aqi) , fontWeight : "bold"}}>{handleAQI(weatherData.aqi)}</span></span>
+            </p>
+            <div className="aqi-tag">
+              AQI Status:{" "}
+              <span style={{ color: handleAqiColor(weatherData.aqi), fontWeight: "bold" }}>
+                {handleAQI(weatherData.aqi)}
+              </span>
+            </div>
+          </div>
+          <div className="forecast-hero-icon">
+            <i className={getIcons(weatherData.list[0].weather[0].id)}></i>
           </div>
         </div>
 
-        <div className="hourly_forecast">
-          <span className="section_title">Hourly Forecast</span>
-          <ul className="hourly_forecast_list">
+        {/* Hourly Forecast */}
+        <div className="forecast-section">
+          <h3>Hourly Forecast</h3>
+          <div className="hourly-forecast-row">
             {hourlyForecast.map((item) => (
-              <li className="hour_card" key={item.dt}>
-                <span className="hour_card_time">
+              <div key={item.dt} className="hourly-forecast-card">
+                <span className="hourly-time">
                   {item.dt_txt.split(" ")[1].substring(0, 5)}
                 </span>
-                <span className="hour_card_icon">
-                  <i className={getIcons(item.weather[0].id)}></i>
-                </span>
-                <span className="hour_card_temp">
+                <i className={`${getIcons(item.weather[0].id)} hourly-icon`}></i>
+                <span className="hourly-temp">
                   {Math.round(item.main.temp)}°C
                 </span>
-              </li>
+              </div>
             ))}
-          </ul>
+          </div>
         </div>
 
-        <div className="multi_day_forecast">
-          <span className="section_title">Multi-Day Forecast</span>
-          <ul className="multi_day_forecast_list">
+        {/* Multi-Day Forecast */}
+        <div className="forecast-section">
+          <h3>5-Day Forecast</h3>
+          <div className="multiday-list">
             {Object.keys(dailyData)
               .slice(1)
-              .map((date) => (
-                <li className="day_row" key={date}>
-                  <span className="day_row_name">{getDay(date)}</span>
-                  <span className="day_row_icon">
-                    <i className={getIcons(dailyIcon[date][0])}></i>
+              .map((dateStr) => (
+                <div key={dateStr} className="multiday-row">
+                  <span className="multiday-day">{getDayName(dateStr)}</span>
+                  <i className={`${getIcons(dailyIcon[dateStr]?.[0] || 800)} multiday-icon`}></i>
+                  <span className="multiday-temps">
+                    {Math.round(min_temp(dateStr))}° / {Math.round(max_temp(dateStr))}°
                   </span>
-                  <span className="day_row_temps">
-                    {Math.round(min_temp(date))}
-                    °/
-                    {Math.round(max_temp(date))}°
-                  </span>
-                </li>
+                </div>
               ))}
-          </ul>
+          </div>
         </div>
 
-        <div className="detailed_grid">
-          <span id="grid1" className="section_title">
-            Today's Highlights
-          </span>
-          <div className="detailed_card">
-            <div className="detailed_card_icon"></div>
-            <div className="detailed_card_title">Feels Like</div>
-            <div className="detailed_card_value">
-              {Math.round(weatherData.list[0].main.feels_like)}°C
+        {/* Highlights Grid */}
+        <div className="forecast-section">
+          <h3>Today's Highlights</h3>
+          <div className="highlights-grid">
+            <div className="highlight-card">
+              <p className="highlight-label">Feels Like</p>
+              <p className="highlight-val">{Math.round(weatherData.list[0].main.feels_like)}°C</p>
             </div>
-          </div>
-          <div className="detailed_card">
-            <div className="detailed_card_icon"></div>
-            <div className="detailed_card_title">Wind</div>
-            <div className="detailed_card_value">
-              {Math.round(weatherData.list[0].wind.speed * 3.6)} km/h
+            <div className="highlight-card">
+              <p className="highlight-label">Wind</p>
+              <p className="highlight-val">{Math.round(weatherData.list[0].wind.speed * 3.6)} km/h</p>
             </div>
-          </div>
-          <div className="detailed_card">
-            <div className="detailed_card_icon"></div>
-            <div className="detailed_card_title">Precipitation</div>
-            <div className="detailed_card_value">
-              {weatherData.list[0].pop * 100}%
+            <div className="highlight-card">
+              <p className="highlight-label">Humidity</p>
+              <p className="highlight-val">{weatherData.list[0].main.humidity}%</p>
             </div>
-          </div>
-          <div className="detailed_card">
-            <div className="detailed_card_icon"></div>
-            <div className="detailed_card_title">Humidity</div>
-            <div className="detailed_card_value">
-              {weatherData.list[0].main.humidity}%
+            <div className="highlight-card">
+              <p className="highlight-label">Pressure</p>
+              <p className="highlight-val">{weatherData.list[0].main.pressure} hpa</p>
             </div>
-          </div>
-          <div className="detailed_card">
-            <div className="detailed_card_icon"></div>
-            <div className="detailed_card_title">Pressure</div>
-            <div className="detailed_card_value">
-              {weatherData.list[0].main.pressure} hpa
+            <div className="highlight-card">
+              <p className="highlight-label">Visibility</p>
+              <p className="highlight-val">{(weatherData.list[0].visibility / 1000).toFixed(1)} km</p>
             </div>
-          </div>
-          <div className="detailed_card">
-            <div className="detailed_card_icon"></div>
-            <div className="detailed_card_title">Visibility</div>
-            <div className="detailed_card_value">
-              {weatherData.list[0].visibility / 1000} km
+            <div className="highlight-card">
+              <p className="highlight-label">Precipitation</p>
+              <p className="highlight-val">{Math.round(weatherData.list[0].pop * 100)}%</p>
             </div>
           </div>
         </div>
       </div>
     );
   }
+
+  return null;
 };
 
 export default Detailed_forecast;
